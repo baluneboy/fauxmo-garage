@@ -1,2 +1,2 @@
 # fauxmo-garage
-Open my garage door using Amazon echo and fauxmo plus GPIO on a raspberry pi.
+Open my garage door using Amazon echo and fauxmo plus GPIO on a raspberry pi...oh yeah, and opencv ftw!
