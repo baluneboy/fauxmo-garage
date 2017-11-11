@@ -5,6 +5,8 @@ import numpy as np
 import matcher
 import disp
 
+from matplotlib import pyplot as plt
+
 from flimsy_constants import DOOR_OFFSETXY_WH, TARG_OFFSETXY_WH
 
 # TODO compare results with histogram equalization on "skinny garage door" vs. clahe
@@ -98,9 +100,7 @@ def main_chain(img_name, tmp_name):
     # apply CLAHE to roi1 subset of image's blue channel
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
     croi = clahe.apply(bluroi1)
-    
-    # TODO show histogram of croi
-    
+       
     # TODO flood-fill croi with what start pixel???
     #ffcroi = flood_fill(croi)
     
@@ -115,6 +115,40 @@ def main_chain(img_name, tmp_name):
     
     # convert image from LAB Color model to BGR
     final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+    # TODO show histogram of croi
+    #colors = ('b','g','r')
+    #colors = ('b',)
+    #for i,col in enumerate(colors):
+    #    histr = cv2.calcHist(final[tleft[1]:bright[1], tleft[0]:bright[0]], [i], None, [256], [0,256])
+    #    plt.plot(histr,color = col)
+    #    plt.xlim([0,256])
+    #plt.savefig('/tmp/histr.png')
+    
+    colors = ('b',)
+    n_bins = 256
+    fig, ax = plt.subplots(figsize=(12, 8))    
+    
+    i = 0
+    c = colors[i]
+    
+    # ith-channel of skinny garage door (roi1) AFTER image processing
+    sgd = final[tleft[1]:bright[1], tleft[0]:bright[0]][:,:,i]
+    
+    n, bins, patches = ax.hist([sgd], n_bins, normed=1, color=c, histtype='step', cumulative=True, label='Color: ' + c)
+    
+    # tidy up the figure
+    ax.grid(True)
+    #ax.legend(loc='right')
+    #ax.set_title('Cumulative Step Histograms')
+    ax.set_title('Cumulative Step Histogram, Blue Channel, %s' % img_name)
+    ax.set_xlabel('Pixel [intensity?]')
+    ax.set_ylabel('Likelihood of Occurrence')
+    
+    plt.xlim([0,256])
+    outname = img_name.replace('.jpg', '_hist.jpg')
+    plt.savefig(outname)    
+    print 'open -a Firefox file://%s' % outname    
 
     return img, final, xywh_template
 
@@ -147,7 +181,7 @@ def demo_show_main(img, final, xywh_temp):
 
 
 if __name__ == '__main__':
-    img_name = '/Users/ken/Pictures/foscam/2017-11-08_18_44_open.jpg'
+    img_name = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
     tmp_name = '/Users/ken/Pictures/foscam/template.jpg'    
     img, final, xywh_temp = main_chain(img_name, tmp_name)
     demo_show_main(img, final, xywh_temp)
