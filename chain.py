@@ -11,26 +11,25 @@ import matplotlib.mlab as mlab
 
 from flimsy_constants import DOOR_OFFSETXY_WH, TARG_OFFSETXY_WH
 
-# TODO compare results with histogram equalization on "skinny garage door" vs. clahe
-#      EACH of above then does flood_fill (start_px = mid-center of target board)
-#      actually look at histograms to get a feel for what those look like
+# TODO canvas/look at histograms to get a feel for what those look like with a few param changes
 
-# TODO compare blob detection within "skinny garage door" roi versus flood fill
+# FIXME modularize and verify that flood fill and/or blob detect is operating only within "skinny garage door"
 
-# FIXME verify that flood fill and/or blob detect is operating only within "skinny garage door"
-
-# FIXME change back to LAB (from BGR) nomenclature
-
-def roi_blur_histeq(roi, blursize=7, cliplim=3.0, gridsize=8):
-    """Apply blur and histogram equalization to region of interest.
+def blurred_histogram_equalization(img_name, template_name, blursize=5, cliplim=3.0, gridsize=8):
+    """Apply Gaussian blur and histogram equalization CLAHE to a region of interest (roi).
     
-    Returns a copy of image (roi) that has been blurred and histogram-equalized.
+    Returns a final image with roi that has been blurred and histogram-equalized via CLAHE.
     -------
     Output:
-    roi2 -- output image that has been blurred and hist-equalized
+    img -- image of interest read from img_name
+    final -- processed copy of img where roi has been replaced with blurred CLAHE
+    xywh_template -- xywh-tuple where template image was found in img
+    topleft_sgd -- top-left xy-tuple of coords where skinny garage door (offset from template) WAS ASSUMED
+    botright_sgd -- bottom-right xy-tuple of coords where skinny garage door (offset from template) WAS ASSUMED    
 
     Input argument:
-    roi  -- input image region of interest
+    img_name -- string for full path to image of interest
+    template_name -- string for full path to template image
     
     Keyword arguments:
     blursize -- int for kernel size of Gaussian blur (x and y same size)
@@ -39,16 +38,47 @@ def roi_blur_histeq(roi, blursize=7, cliplim=3.0, gridsize=8):
 
     """
     
-    roi2 = roi.copy()
+    # read input image as 3-channel image
+    img = cv2.imread(img_name, 1)
     
-    # apply Gaussian blur to smooth the roi [to improve flood-fill results?]
-    blur = cv2.GaussianBlur(roi2, (blursize, blursize), 0)
+    # read template image as gray-scale image
+    template = cv2.imread(template_name, 0)
     
-    # apply CLAHE to luminance channel
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-    heq_blur = clahe.apply(blur)
+    # convert image to LAB color model
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+       
+    # split LAB image to 3 channels (L, a, b)
+    L, a, b = cv2.split(lab)
     
-    return heq_blur
+    # use template matching on luminance channel to find gray-scale template in bigger image
+    xywh_template = matcher.match_template(L, template)  # both are gray-scale here [right?]
+    topleft_template = (xywh_template[0], xywh_template[1])
+    
+    # FIXME what if foscam moves, then offset method will not work robustly, will it?
+    # extract skinny garage door subset image (roi1) using flimsy offsetxy_wh method
+    topleft_sgd, botright_sgd = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
+    roi1 = L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]]  # looks like np arrays have rows/cols swapped???
+   
+    # use blurring to smooth skinny garage door (roi1) region a bit
+    bluroi1 = cv2.GaussianBlur(roi1, (blursize, blursize), 0)
+    
+    # apply CLAHE to skinny garage door (roi1) subset of image's luminance channel
+    clahe = cv2.createCLAHE(clipLimit=cliplim, tileGridSize=(gridsize, gridsize))
+    croi = clahe.apply(bluroi1)
+       
+    # TODO flood-fill croi with what start pixel???
+    #ffcroi = flood_fill(croi)
+    
+    # replace copy of luminance channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, croi
+    L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]] = croi
+    
+    # merge the blurred-CLAHE-enhanced luminance channel back with the a and b channels
+    limg = cv2.merge((L, a, b))
+    
+    # convert image from LAB Color model to BGR
+    final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+    return img, final, xywh_template, topleft_sgd, botright_sgd
     
 
 def flood_fill(img):
@@ -75,64 +105,22 @@ def flood_fill(img):
     return img2
 
 
-def main_chain(img_name, tmp_name):
+def main_chain(img_name, template_name, blursize=5, cliplim=3.0, gridsize=8):
     
-    # read input image as 3-channel image
-    img = cv2.imread(img_name, 1)
+    # FIXME what if foscam moves, then blind offset-from-template method will not work robustly, will it?
+    # apply blurring and CLAHE to small (skinny garage door) roi
+    img, final, xywh_template, topleft_sgd, botright_sgd = blurred_histogram_equalization(img_name, template_name,
+                                                               blursize=5,
+                                                               cliplim=3.0, gridsize=8)
     
-    # read template image as gray-scale image
-    template = cv2.imread(tmp_name, 0)
-    
-    # convert image to LAB color model
-    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    
-    # FIXME references to bgr below here should be lab
-    
-    # split LAB image to 3 channels (L, a, b)
-    L, a, b = cv2.split(lab)
-    
-    # use template matching on luminance channel to find gray-scale template in bigger image
-    xywh_template = matcher.match_template(L, template)
-    topleft_template = (xywh_template[0], xywh_template[1])
-    
-    # use flimsy offsetxy_wh of skinny garage door to extract a subset image, roi1
-    tleft, bright = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
-    roi1 = L[tleft[1]:bright[1], tleft[0]:bright[0]]  # seems like np arrays have rows/cols swapped???
-   
-    # FIXME use args for blursize
-    # use blurring to smooth skinny garage door (roi1) region a bit
-    bluroi1 = cv2.GaussianBlur(roi1, (7, 7), 0)
-    
-    # FIXME use args for cliplim and gridsize
-    # apply CLAHE to roi1 subset of image's luminance channel
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-    croi = clahe.apply(bluroi1)
-       
-    # TODO flood-fill croi with what start pixel???
-    #ffcroi = flood_fill(croi)
-    
-    # make copy of luminance channel
-    c = L.copy()
-    
-    # replace copy of luminance channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, croi
-    c[tleft[1]:bright[1], tleft[0]:bright[0]] = croi
-    
-    # merge the blurred-CLAHE-enhanced luminance channel back with the a and b channels
-    limg = cv2.merge((c, a, b))
-    
-    # convert image from LAB Color model to BGR
-    final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-
     # histogram of skinny garage door subset after image processing
-    
     colors = ('b',)
     fig, ax = plt.subplots(figsize=(12, 8))    
     
+    # ith-channel of skinny garage door (roi1) after image processing
     i = 0
     c = colors[i]
-    
-    # ith-channel of skinny garage door (roi1) after image processing
-    sgd = final[tleft[1]:bright[1], tleft[0]:bright[0]][:,:,i]
+    sgd = final[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]][:,:,i]  # is this blue or Luminance?
     
     intensity_bins = range(0,256)
     n, bins, patches = ax.hist([sgd], intensity_bins, normed=1, color=c, histtype='step', cumulative=True, label='Color: ' + c)
@@ -164,7 +152,7 @@ def main_chain(img_name, tmp_name):
     return img, final, xywh_template
 
 
-def demo_show_main(img, final, xywh_temp):
+def demo_show_main(img, final, xywh_temp, blursize=5, cliplim=3.0, gridsize=8):
     
     topleft_template = (xywh_temp[0], xywh_temp[1])    
     
@@ -192,14 +180,19 @@ def demo_show_main(img, final, xywh_temp):
 
 
 if __name__ == '__main__':
+
+    # FIXME get this from input args
+    blursize, cliplim, gridsize = 5, 3.0, 8
+    
     #img_name = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
     img_name = sys.argv[1]
     tmp_name = '/Users/ken/Pictures/foscam/template.jpg'
-    img, final, xywh_temp = main_chain(img_name, tmp_name)
+    
+    img, final, xywh_temp = main_chain(img_name, tmp_name, blursize=blursize, cliplim=cliplim, gridsize=gridsize)
     if img_name.endswith('close.jpg'):
         img2_name = img_name.replace('close.jpg', 'open.jpg')
     else:
         img2_name = img_name.replace('open.jpg', 'close.jpg')
-    img2, final2, xywh_temp2 = main_chain(img2_name, tmp_name)
+    img2, final2, xywh_temp2 = main_chain(img2_name, tmp_name, blursize=blursize, cliplim=cliplim, gridsize=gridsize)
     
-    demo_show_main(img, final, xywh_temp)
+    demo_show_main(img, final, xywh_temp, blursize=blursize, cliplim=cliplim, gridsize=gridsize)
