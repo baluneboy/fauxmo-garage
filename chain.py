@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+import sys
 import cv2
 import numpy as np
 import matcher
 import disp
 
 from matplotlib import pyplot as plt
+import matplotlib.mlab as mlab
 
 from flimsy_constants import DOOR_OFFSETXY_WH, TARG_OFFSETXY_WH
 
@@ -17,6 +19,7 @@ from flimsy_constants import DOOR_OFFSETXY_WH, TARG_OFFSETXY_WH
 
 # FIXME verify that flood fill and/or blob detect is operating only within "skinny garage door"
 
+# FIXME change back to LAB (from BGR) nomenclature
 
 def roi_blur_histeq(roi, blursize=7, cliplim=3.0, gridsize=8):
     """Apply blur and histogram equalization to region of interest.
@@ -83,59 +86,66 @@ def main_chain(img_name, tmp_name):
     # convert image to LAB color model
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     
-    # split LAB image to 3 color channels
-    b, g, r = cv2.split(lab)
+    # FIXME references to bgr below here should be lab
     
-    # use template matching on blue channel to find template
-    xywh_template = matcher.match_template(b, template)
+    # split LAB image to 3 channels (L, a, b)
+    L, a, b = cv2.split(lab)
+    
+    # use template matching on luminance channel to find gray-scale template in bigger image
+    xywh_template = matcher.match_template(L, template)
     topleft_template = (xywh_template[0], xywh_template[1])
     
     # use flimsy offsetxy_wh of skinny garage door to extract a subset image, roi1
     tleft, bright = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
-    roi1 = b[tleft[1]:bright[1], tleft[0]:bright[0]]  # seems like np arrays have rows/cols swapped???
+    roi1 = L[tleft[1]:bright[1], tleft[0]:bright[0]]  # seems like np arrays have rows/cols swapped???
    
+    # FIXME use args for blursize
     # use blurring to smooth skinny garage door (roi1) region a bit
     bluroi1 = cv2.GaussianBlur(roi1, (7, 7), 0)
     
-    # apply CLAHE to roi1 subset of image's blue channel
+    # FIXME use args for cliplim and gridsize
+    # apply CLAHE to roi1 subset of image's luminance channel
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
     croi = clahe.apply(bluroi1)
        
     # TODO flood-fill croi with what start pixel???
     #ffcroi = flood_fill(croi)
     
-    # make copy of blue channel
-    c = b.copy()
+    # make copy of luminance channel
+    c = L.copy()
     
-    # replace copy of blue channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, croi
+    # replace copy of luminance channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, croi
     c[tleft[1]:bright[1], tleft[0]:bright[0]] = croi
     
-    # merge the blurred-CLAHE-enhanced blue channel with the green and red channels
-    limg = cv2.merge((c, g, r))
+    # merge the blurred-CLAHE-enhanced luminance channel back with the a and b channels
+    limg = cv2.merge((c, a, b))
     
     # convert image from LAB Color model to BGR
     final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
-    # TODO show histogram of croi
-    #colors = ('b','g','r')
-    #colors = ('b',)
-    #for i,col in enumerate(colors):
-    #    histr = cv2.calcHist(final[tleft[1]:bright[1], tleft[0]:bright[0]], [i], None, [256], [0,256])
-    #    plt.plot(histr,color = col)
-    #    plt.xlim([0,256])
-    #plt.savefig('/tmp/histr.png')
+    # histogram of skinny garage door subset after image processing
     
     colors = ('b',)
-    n_bins = 256
     fig, ax = plt.subplots(figsize=(12, 8))    
     
     i = 0
     c = colors[i]
     
-    # ith-channel of skinny garage door (roi1) AFTER image processing
+    # ith-channel of skinny garage door (roi1) after image processing
     sgd = final[tleft[1]:bright[1], tleft[0]:bright[0]][:,:,i]
     
-    n, bins, patches = ax.hist([sgd], n_bins, normed=1, color=c, histtype='step', cumulative=True, label='Color: ' + c)
+    intensity_bins = range(0,256)
+    n, bins, patches = ax.hist([sgd], intensity_bins, normed=1, color=c, histtype='step', cumulative=True, label='Color: ' + c)
+    
+    # FIXME we may not always want histogram plot (maybe just during "gather")
+    
+    # TODO with each image file, always ratchet up a running sum type of histogram OR db each for future summing
+    
+    # TODO always put percentiles into db table!?
+    
+    # percentiles
+    percs = mlab.prctile([sgd], p=np.arange(10.0, 100.0, 10.0))
+    print percs    
     
     # tidy up the figure
     ax.grid(True)
@@ -143,10 +153,11 @@ def main_chain(img_name, tmp_name):
     #ax.set_title('Cumulative Step Histograms')
     ax.set_title('Cumulative Step Histogram, Blue Channel, %s' % img_name)
     ax.set_xlabel('Pixel [intensity?]')
-    ax.set_ylabel('Likelihood of Occurrence')
-    
+    ax.set_ylabel('Likelihood of Occurrence')   
     plt.xlim([0,256])
-    outname = img_name.replace('.jpg', '_hist.jpg')
+    
+    # save cumulative histogram figure as _chist.jpg
+    outname = img_name.replace('.jpg', '_chist.jpg')
     plt.savefig(outname)    
     print 'open -a Firefox file://%s' % outname    
 
@@ -181,7 +192,14 @@ def demo_show_main(img, final, xywh_temp):
 
 
 if __name__ == '__main__':
-    img_name = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
-    tmp_name = '/Users/ken/Pictures/foscam/template.jpg'    
+    #img_name = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
+    img_name = sys.argv[1]
+    tmp_name = '/Users/ken/Pictures/foscam/template.jpg'
     img, final, xywh_temp = main_chain(img_name, tmp_name)
+    if img_name.endswith('close.jpg'):
+        img2_name = img_name.replace('close.jpg', 'open.jpg')
+    else:
+        img2_name = img_name.replace('open.jpg', 'close.jpg')
+    img2, final2, xywh_temp2 = main_chain(img2_name, tmp_name)
+    
     demo_show_main(img, final, xywh_temp)
