@@ -32,7 +32,7 @@ def blurred_histogram_equalization(img_name, template_name, blursize=5, cliplim=
     template_name -- string for full path to template image
     
     Keyword arguments:
-    blursize -- int for kernel size of Gaussian blur (x and y same size)
+    blursize -- int for kernel size of Gaussian blur (x and y same size); None to skip blurring
     cliplim  -- float value for CLAHE clipLimit
     gridsize -- int value for CLAHE tileGridSize (x and y same size)
 
@@ -51,26 +51,27 @@ def blurred_histogram_equalization(img_name, template_name, blursize=5, cliplim=
     L, a, b = cv2.split(lab)
     
     # use template matching on luminance channel to find gray-scale template in bigger image
-    xywh_template = matcher.match_template(L, template)  # both are gray-scale here [right?]
+    xywh_template = matcher.match_template(L, template)  # both are gray-scale here
     topleft_template = (xywh_template[0], xywh_template[1])
     
     # FIXME what if foscam moves, then offset method will not work robustly, will it?
     # extract skinny garage door subset image (roi1) using flimsy offsetxy_wh method
     topleft_sgd, botright_sgd = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
     roi1 = L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]]  # looks like np arrays have rows/cols swapped???
-   
-    # use blurring to smooth skinny garage door (roi1) region a bit
-    bluroi1 = cv2.GaussianBlur(roi1, (blursize, blursize), 0)
+
+    if blursize:   
+        # use blurring to smooth skinny garage door (roi1) region a bit
+        roi2 = cv2.GaussianBlur(roi1, (blursize, blursize), 0)
+    else:
+        # skip blurring
+        roi2 = roi1
     
-    # apply CLAHE to skinny garage door (roi1) subset of image's luminance channel
+    # apply CLAHE to skinny garage door (roi2 may/not be blurred) subset of image's luminance channel
     clahe = cv2.createCLAHE(clipLimit=cliplim, tileGridSize=(gridsize, gridsize))
-    croi = clahe.apply(bluroi1)
-       
-    # TODO flood-fill croi with what start pixel???
-    #ffcroi = flood_fill(croi)
+    roi3 = clahe.apply(roi2)
     
-    # replace copy of luminance channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, croi
-    L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]] = croi
+    # replace copy of luminance channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, roi3
+    L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]] = roi3
     
     # merge the blurred-CLAHE-enhanced luminance channel back with the a and b channels
     limg = cv2.merge((L, a, b))
@@ -129,7 +130,7 @@ def main_chain(img_name, template_name, blursize=5, cliplim=3.0, gridsize=8):
     
     # TODO with each image file, always ratchet up a running sum type of histogram OR db each for future summing
     
-    # TODO always put percentiles into db table!?
+    # TODO always put percentiles (10th, 20th, 30th, ... 90th) into db table!?
     
     # percentiles
     percs = mlab.prctile([sgd], p=np.arange(10.0, 100.0, 10.0))

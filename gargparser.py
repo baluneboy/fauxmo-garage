@@ -22,9 +22,11 @@ _DEFAULT_AGE = 'youngest'
 _DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
 _DEFAULT_PATTERN = '\d{4}-\d{2}-\d{2}_\d{2}_\d{2}_(open|close)\.jpg' # LIKE 2017-11-09_06_07_close.jpg
 _DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
-_DEFAULT_MAXDIST = 2   # maximum distance to start pixel for flood fill
-_DEFAULT_THRESH = 100  # threshold for flood fill; less than threshold is open
-_DEFAULT_BLURSIZE = 7  # size of kernel for Gaussian blur (must be positive and odd)
+#_DEFAULT_MAXDIST = 2    # maximum distance to start pixel for flood fill
+#_DEFAULT_THRESH = 100   # threshold for flood fill; less than threshold is open
+_DEFAULT_BLURSIZE = 5   # size of kernel for Gaussian blur (must be positive and odd)
+_DEFAULT_CLIPLIM = 3.0  # clip limit for CLAHE
+_DEFAULT_GRIDSIZE = 8   # tile grid size for CLAHE
 
 
 def date_str(d):
@@ -67,34 +69,34 @@ def template_str(t):
     return t
 
 
-def maxdist_str(r):
-    """return int, d, converted from string, s; use as max dist (d, d, d) to start pixel for flood fill"""
-    try:
-        d = int(r)
-    except Exception, e:
-        raise argparse.ArgumentTypeError('int max dist to start pixel (flood fill) could not be converted from %s' % e.message)
+#def maxdist_str(r):
+#    """return int, d, converted from string, s; use as max dist (d, d, d) to start pixel for flood fill"""
+#    try:
+#        d = int(r)
+#    except Exception, e:
+#        raise argparse.ArgumentTypeError('int max dist to start pixel (flood fill) could not be converted from %s' % e.message)
+#
+#    if d < 1 or d > 5:
+#        raise argparse.ArgumentTypeError('int max dist to start pixel (flood fill) has to be 1 <= d <= 5')
+#
+#    return d
 
-    if d < 1 or d > 5:
-        raise argparse.ArgumentTypeError('int max dist to start pixel (flood fill) has to be 1 <= d <= 5')
 
-    return d
-
-
-def thresh_str(r):
-    """return int, d, converted from string, s; use as upper limit on flood fill pixel count when door is open"""
-    try:
-        d = int(r)
-    except Exception, e:
-        raise argparse.ArgumentTypeError('int upper lim on flood fill pixel count (door open) could not be converted from %s' % e.message)
-
-    if d < 1:
-        raise argparse.ArgumentTypeError('int upper lim on flood fill pixel count (door open) must be greater than 1')
-
-    return d
+#def thresh_str(r):
+#    """return int, d, converted from string, s; use as upper limit on flood fill pixel count when door is open"""
+#    try:
+#        d = int(r)
+#    except Exception, e:
+#        raise argparse.ArgumentTypeError('int upper lim on flood fill pixel count (door open) could not be converted from %s' % e.message)
+#
+#    if d < 1:
+#        raise argparse.ArgumentTypeError('int upper lim on flood fill pixel count (door open) must be greater than 1')
+#
+#    return d
 
 
 def blursize_str(r):
-    """return int, b, converted from string, s; use as size of kernel for Gaussian blur"""
+    """return int, b, converted from string, r; use as size of kernel for Gaussian blur"""
     try:
         b = int(r)
     except Exception, e:
@@ -107,6 +109,34 @@ def blursize_str(r):
     # verify integer is odd
     if b % 2 == 0:
         raise argparse.ArgumentTypeError('int kernel size for Gaussian blur must be odd')
+    
+    return b
+
+
+def cliplim_str(r):
+    """return float, c, converted from string, r; use as clipLimit for CLAHE histogram equalization"""
+    try:
+        c = float(r)
+    except Exception, e:
+        raise argparse.ArgumentTypeError('float clipLimit for CLAHE could not be converted from %s' % e.message)
+
+    # verify float is positive, non-zero for cliplim
+    if c <= 0:
+        raise argparse.ArgumentTypeError('float cliplim for CLAHE must be positive')
+    
+    return c
+
+
+def gridsize_str(r):
+    """return int, b, converted from string, r; use as tileGridSize for CLAHE histogram equalization"""
+    try:
+        b = int(r)
+    except Exception, e:
+        raise argparse.ArgumentTypeError('int gridsize for CLAHE could not be converted from %s' % e.message)
+
+    # verify integer is at least 2 for gridsize
+    if b < 2:
+        raise argparse.ArgumentTypeError('int gridsize for CLAHE must be >= 2')
     
     return b
 
@@ -127,10 +157,10 @@ def show_args(args):
 
 def parse_inputs():
     """parse input arguments using argparse from standard library"""
-    parser = argparse.ArgumentParser(description='"Open the pod bay doors, GARY..."')
+    parser = argparse.ArgumentParser(description='"Open the pod bay doors..."')
 
     # date of interest
-    help_date = "date of interest; default=%s" % str(_DEFAULT_DATE)
+    help_date = "date of interest; today's default is %s" % str(_DEFAULT_DATE)
     parser.add_argument('-d', '--date', default=_DEFAULT_DATE,
                         type=date_str,
                         help=help_date)
@@ -160,23 +190,35 @@ def parse_inputs():
                         type=template_str,
                         help=help_template)
 
-    # int max dist to start pixel for flood fill converted from string
-    help_maxdist = "max dist to start pixel for flood fill; default=%d" % _DEFAULT_MAXDIST
-    parser.add_argument('-r', '--maxdist', default=_DEFAULT_MAXDIST,
-                        type=maxdist_str,
-                        help=help_maxdist)
+    ## int max dist to start pixel for flood fill converted from string
+    #help_maxdist = "max dist to start pixel for flood fill; default=%d" % _DEFAULT_MAXDIST
+    #parser.add_argument('-r', '--maxdist', default=_DEFAULT_MAXDIST,
+    #                    type=maxdist_str,
+    #                    help=help_maxdist)
 
-    # int upper lim on flood fill pixel count (when door open) converted from string
-    help_thresh = "max dist to start pixel for flood fill; default=%d" % _DEFAULT_THRESH
-    parser.add_argument('-e', '--thresh', default=_DEFAULT_THRESH,
-                        type=thresh_str,
-                        help=help_thresh)
+    ## int upper lim on flood fill pixel count (when door open) converted from string
+    #help_thresh = "max dist to start pixel for flood fill; default=%d" % _DEFAULT_THRESH
+    #parser.add_argument('-e', '--thresh', default=_DEFAULT_THRESH,
+    #                    type=thresh_str,
+    #                    help=help_thresh)
     
     # int size of kernel for Gaussian blur (must be positive and odd)
     help_blursize = "size of kernel for Gaussian blur; default=%d" % _DEFAULT_BLURSIZE
     parser.add_argument('-b', '--blursize', default=_DEFAULT_BLURSIZE,
                         type=blursize_str,
                         help=help_blursize)    
+    
+    # float clip limit for CLAHE
+    help_cliplim = "clip limit for CLAHE; default=%.1f" % _DEFAULT_CLIPLIM
+    parser.add_argument('-c', '--cliplim', default=_DEFAULT_CLIPLIM,
+                        type=cliplim_str,
+                        help=help_cliplim)
+    
+    # int tile grid size for CLAHE
+    help_gridsize = "tile grid size for CLAHE; default=%d" % _DEFAULT_GRIDSIZE
+    parser.add_argument('-r', '--gridsize', default=_DEFAULT_GRIDSIZE,
+                        type=gridsize_str,
+                        help=help_gridsize)
     
     # mutually exclusive options (-g for gather, -s for show)
     group = parser.add_mutually_exclusive_group()

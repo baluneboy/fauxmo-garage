@@ -18,4 +18,4 @@ These depend on camera not moving relative to scene of interest.
 
 
 DOOR_OFFSETXY_WH = (167, 154, 52, 112)
-TARG_OFFSETXY_WH = (203, 198, 10, 34)
+TARG_OFFSETXY_WH = (203, 198, 10, 34)    # offset for where the target was (for flood fill)

@@ -115,16 +115,3 @@ def show_markup_image(img, rect_params):
         cv2.rectangle(img2, top_left, bottom_right, color, 2)
     
     return img2
-
-
-def some_leftover_code_snippets():
-    # histogram equalization on roi
-    roi = img[tleft[1]:bright[1], tleft[0]:bright[0]]
-    img[tleft[1]:bright[1], tleft[0]:bright[0]] = cv2.equalizeHist(roi)
-
-    oname = '/tmp/out.jpg'
-    # write original and processed side-by-side
-    sbs = np.hstack((img, img2)) #stacking images side-by-side
-    cv2.imwrite(oname, sbs)
-    print 'open -a Firefox file://%s' % oname
-        

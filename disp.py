@@ -2,6 +2,7 @@
 
 import cv2
 
+
 def show_before_after(img_fname, args, vprint):
     """show side-by-side foscam image before/after analysis with markup on right side"""
     vprint('DISP:', img_fname, 'SEE')

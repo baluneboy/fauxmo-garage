@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 def get_print_fun(verbosity):
     """return function that does printing that depends on verbosity level"""
 
