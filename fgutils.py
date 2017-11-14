@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import cv2
 from dateutil import parser
 
 
@@ -42,10 +43,34 @@ def parse_image_filename(fname):
     
     return bname, dtm, fsize, state
 
-    
+
+def calc_grayscale_hist(img):
+    """calculate histogram from input ASSUMED GRAYSCALE image"""
+    hist = cv2.calcHist([img], [0], None, [256], [0, 256])
+    return hist
+
+
+def plot_hist(hist):
+    from matplotlib import pyplot as plt    
+    plt.plot(hist)
+    plt.xlim([0, 256])
+    plt.show()
+
+
 if __name__ == '__main__':
-    bname, dtm, fsize, state = parse_image_filename('/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg')
+    
+    fname = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
+    
+    bname, dtm, fsize, state = parse_image_filename(fname)
     print bname
     print dtm
     print fsize
     print state
+
+    from matplotlib import pyplot as plt    
+    # FIXME this will actually be our grayscale roi for skinny garage door, sgd
+    # read grayscale image from image file
+    img = cv2.imread(fname, 0)
+    hist = calc_grayscale_hist(img)
+    plot_hist(hist)
+    
