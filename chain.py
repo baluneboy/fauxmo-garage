@@ -15,72 +15,72 @@ from flimsy_constants import DOOR_OFFSETXY_WH, TARG_OFFSETXY_WH
 
 # FIXME modularize and verify that flood fill and/or blob detect is operating only within "skinny garage door"
 
-def blurred_histogram_equalization(img_name, template_name, blursize=5, cliplim=3.0, gridsize=8):
-    """Apply Gaussian blur and histogram equalization CLAHE to a region of interest (roi).
-    
-    Returns a final image with roi that has been blurred and histogram-equalized via CLAHE.
-    -------
-    Output:
-    img -- image of interest read from img_name
-    final -- processed copy of img where roi has been replaced with blurred CLAHE
-    xywh_template -- xywh-tuple where template image was found in img
-    topleft_sgd -- top-left xy-tuple of coords where skinny garage door (offset from template) WAS ASSUMED
-    botright_sgd -- bottom-right xy-tuple of coords where skinny garage door (offset from template) WAS ASSUMED    
+#def blurred_histogram_equalization(img_name, template_name, blursize=5, cliplim=3.0, gridsize=8):
+#    """Apply Gaussian blur and histogram equalization CLAHE to a region of interest (roi).
+#    
+#    Returns a final image with roi that has been blurred and histogram-equalized via CLAHE.
+#    -------
+#    Output:
+#    img -- image of interest read from img_name
+#    final -- processed copy of img where roi has been replaced with blurred CLAHE
+#    xywh_template -- xywh-tuple where template image was found in img
+#    topleft_sgd -- top-left xy-tuple of coords where skinny garage door (offset from template) WAS ASSUMED
+#    botright_sgd -- bottom-right xy-tuple of coords where skinny garage door (offset from template) WAS ASSUMED    
+#
+#    Input argument:
+#    img_name -- string for full path to image of interest
+#    template_name -- string for full path to template image
+#    
+#    Keyword arguments:
+#    blursize -- int for kernel size of Gaussian blur (x and y same size); None to skip blurring
+#    cliplim  -- float value for CLAHE clipLimit
+#    gridsize -- int value for CLAHE tileGridSize (x and y same size)
+#
+#    """
+#    
+#    # read input image as 3-channel image
+#    img = cv2.imread(img_name, 1)
+#    
+#    # read template image as gray-scale image
+#    template = cv2.imread(template_name, 0)
+#    
+#    # convert image to LAB color model
+#    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+#       
+#    # split LAB image to 3 channels (L, a, b)
+#    L, a, b = cv2.split(lab)
+#    
+#    # use template matching on luminance channel to find gray-scale template in bigger image
+#    xywh_template = matcher.match_template(L, template)  # both are gray-scale here
+#    topleft_template = (xywh_template[0], xywh_template[1])
+#    
+#    # FIXME what if foscam moves, then offset method will not work robustly, will it?
+#    # extract skinny garage door subset image (roi1) using flimsy offsetxy_wh method
+#    topleft_sgd, botright_sgd = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
+#    roi1 = L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]]  # looks like np arrays have rows/cols swapped???
+#
+#    if blursize:   
+#        # use blurring to smooth skinny garage door (roi1) region a bit
+#        roi2 = cv2.GaussianBlur(roi1, (blursize, blursize), 0)
+#    else:
+#        # skip blurring
+#        roi2 = roi1
+#    
+#    # apply CLAHE to skinny garage door (roi2 may/not be blurred) subset of image's luminance channel
+#    clahe = cv2.createCLAHE(clipLimit=cliplim, tileGridSize=(gridsize, gridsize))
+#    roi3 = clahe.apply(roi2)
+#    
+#    # replace copy of luminance channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, roi3
+#    L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]] = roi3
+#    
+#    # merge the blurred-CLAHE-enhanced luminance channel back with the a and b channels
+#    limg = cv2.merge((L, a, b))
+#    
+#    # convert image from LAB Color model to BGR
+#    final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+#
+#    return img, final, xywh_template, topleft_sgd, botright_sgd
 
-    Input argument:
-    img_name -- string for full path to image of interest
-    template_name -- string for full path to template image
-    
-    Keyword arguments:
-    blursize -- int for kernel size of Gaussian blur (x and y same size); None to skip blurring
-    cliplim  -- float value for CLAHE clipLimit
-    gridsize -- int value for CLAHE tileGridSize (x and y same size)
-
-    """
-    
-    # read input image as 3-channel image
-    img = cv2.imread(img_name, 1)
-    
-    # read template image as gray-scale image
-    template = cv2.imread(template_name, 0)
-    
-    # convert image to LAB color model
-    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-       
-    # split LAB image to 3 channels (L, a, b)
-    L, a, b = cv2.split(lab)
-    
-    # use template matching on luminance channel to find gray-scale template in bigger image
-    xywh_template = matcher.match_template(L, template)  # both are gray-scale here
-    topleft_template = (xywh_template[0], xywh_template[1])
-    
-    # FIXME what if foscam moves, then offset method will not work robustly, will it?
-    # extract skinny garage door subset image (roi1) using flimsy offsetxy_wh method
-    topleft_sgd, botright_sgd = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
-    roi1 = L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]]  # looks like np arrays have rows/cols swapped???
-
-    if blursize:   
-        # use blurring to smooth skinny garage door (roi1) region a bit
-        roi2 = cv2.GaussianBlur(roi1, (blursize, blursize), 0)
-    else:
-        # skip blurring
-        roi2 = roi1
-    
-    # apply CLAHE to skinny garage door (roi2 may/not be blurred) subset of image's luminance channel
-    clahe = cv2.createCLAHE(clipLimit=cliplim, tileGridSize=(gridsize, gridsize))
-    roi3 = clahe.apply(roi2)
-    
-    # replace copy of luminance channel's skinny garage door region with that of the blurred-CLAHE-enhanced version, roi3
-    L[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]] = roi3
-    
-    # merge the blurred-CLAHE-enhanced luminance channel back with the a and b channels
-    limg = cv2.merge((L, a, b))
-    
-    # convert image from LAB Color model to BGR
-    final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-
-    return img, final, xywh_template, topleft_sgd, botright_sgd
-    
 
 def flood_fill(img):
     height, width = img.shape[0:2]
