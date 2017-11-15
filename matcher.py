@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 
-def convert_tleft_bright_to_xywh(tleft, bright):
+def convert_vertices_to_xywh(tleft, bright):
     """Convert two xy-tuples (top_left, bottom_right) to one xywh-tuple.
 
     Returns 4-tuple of absolute (x, y, w, h) coord pixel values.
@@ -92,7 +92,7 @@ def match_template(img, template):
     return found_xywh
 
 
-def show_markup_image(img, rect_params):
+def get_markup_image(img, rect_params):
     """Draw a rectangle around region(s) of interest within input image.
     
     Returns markup image (copy of img) with rectangles drawn around each region using rect_params.

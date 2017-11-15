@@ -11,10 +11,10 @@ def show_before_after(img_fname, args, vprint):
     xywh1 = (x1, y1, w1, h1)
 
     top_left2, bottom_right2 = matcher.convert_offsetxy_wh_to_vertices(top_left, DOOR_OFFSETXY_WH)
-    xywh2 = matcher.convert_tleft_bright_to_xywh(top_left2, bottom_right2)
+    xywh2 = matcher.convert_vertices_to_xywh(top_left2, bottom_right2)
     
     top_left3, bottom_right3 = matcher.convert_offsetxy_wh_to_vertices(top_left, TARG_OFFSETXY_WH)
-    xywh3 = matcher.convert_tleft_bright_to_xywh(top_left3, bottom_right3)    
+    xywh3 = matcher.convert_vertices_to_xywh(top_left3, bottom_right3)    
     
     rectangle_params = [
         # xywh   BGRcolor
@@ -23,7 +23,7 @@ def show_before_after(img_fname, args, vprint):
         (xywh3, (0, 255, 0)),
         ]
     
-    img2 = matcher.show_markup_image(final, rectangle_params)    
+    img2 = matcher.get_markup_image(final, rectangle_params)    
     
     # get a horizontal stack to look at in Firefox
     res = np.hstack((img, img2))  # stacking images side-by-side

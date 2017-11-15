@@ -76,10 +76,10 @@ tmp = cv2.imread(template_fname)
 xywh1 = matcher.match_template(img, tmp)
 
 top_left2, bottom_right2 = matcher.convert_offsetxy_wh_to_vertices(top_left, DOOR_OFFSETXY_WH)
-xywh2 = matcher.convert_tleft_bright_to_xywh(top_left2, bottom_right2)
+xywh2 = matcher.convert_vertices_to_xywh(top_left2, bottom_right2)
 
 top_left3, bottom_right3 = matcher.convert_offsetxy_wh_to_vertices(top_left, TARG_OFFSETXY_WH)
-xywh3 = matcher.convert_tleft_bright_to_xywh(top_left3, bottom_right3)
+xywh3 = matcher.convert_vertices_to_xywh(top_left3, bottom_right3)
 
 rectangle_params = [
     (xywh1, (255, 0, 0)),
@@ -88,7 +88,7 @@ rectangle_params = [
     ]
 print rectangle_params
 
-img2 = matcher.show_markup_image(img, rectangle_params)
+img2 = matcher.get_markup_image(img, rectangle_params)
 
 # write original and processed side-by-side
 sbs = np.hstack((img, img2)) #stacking images side-by-side

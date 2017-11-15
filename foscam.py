@@ -1,18 +1,68 @@
 #!/usr/bin/env python
 
+"""Example Google style docstrings.
+
+This module demonstrates documentation as specified by the `Google Python
+Style Guide`_. Docstrings may extend over multiple lines. Sections are created
+with a section header and a colon followed by a block of indented text.
+
+Example:
+    Examples can be given using either the ``Example`` or ``Examples``
+    sections. Sections support any reStructuredText formatting, including
+    literal blocks::
+
+        $ python example_google.py
+
+Section breaks are created by resuming unindented text. Section breaks
+are also implicitly created anytime a new section starts.
+
+Attributes:
+    module_level_variable1 (int): Module level variables may be documented in
+        either the ``Attributes`` section of the module docstring, or in an
+        inline docstring immediately following the variable.
+
+        Either form is acceptable, but the two should not be mixed. Choose
+        one convention to document module level variables and be consistent
+        with it.
+
+Todo:
+    * For module TODOs
+    * You have to also use ``sphinx.ext.todo`` extension
+
+.. _Google Python Style Guide:
+   http://google.github.io/styleguide/pyguide.html
+
+"""
+
 import os
 import cv2
+import numpy as np
 from dateutil import parser
 
 import matcher
 from flimsy_constants import DOOR_OFFSETXY_WH
 
 class FoscamFile(object):
+    """The summary line for a class docstring should fit on one line.
+
+    Attributes are documented inline with the attribute's declaration (see __init__ method below).
+
+    Properties created with the @property decorator should be documented
+    in the property's getter method.
+
+    """
     
     def __init__(self, filename):
+        """Initialize FoscamFile object.
+        
+        Args:
+            filename (str): Full path filename for input image file of interest.
+            bname (str): Basename extracted from filename.
+
+        """        
         self.filename = filename
         self.bname = None
-        self.fsize = None
+        self.fsize = None  #: list of str: Doc comment *before* attribute, with type specified
         self.dtm = None
         self.state = None
         
@@ -60,7 +110,7 @@ class FoscamFile(object):
 
 class FoscamImage(object):
    
-    def __init__(self, img_name, tmp_name):
+    def __init__(self, img_name, tmp_name='/Users/ken/Pictures/foscam/template.jpg'):
         self.img_name = img_name
         self.tmp_name = tmp_name
         self.foscam_file = FoscamFile(self.img_name)
@@ -77,14 +127,14 @@ class FoscamImage(object):
 
     @property
     def image(self):
-        """Get the image in color."""
+        """numpy.ndarray: Array (h, w, 3) of input image of interest; 3rd dimension is color."""
         if self._image:
             return self._image
         return cv2.imread(self.img_name, 1)
     
     @property
     def template(self):
-        """Get the template image in grayscale."""
+        """numpy.ndarray: Array (h, w) of template image (grayscale)"""
         if self._template:
             return self._template
         return cv2.imread(self.tmp_name, 0)
@@ -180,39 +230,32 @@ class FoscamImage(object):
         
         return final
 
-
-def demo_show(fci):
-
-    import numpy as np
-    
-    topleft_sgd, bottomright_sgd = fci.roi_vertices
-    xywh_door = matcher.convert_tleft_bright_to_xywh(topleft_sgd, bottomright_sgd)
- 
-    rectangle_params = [
-        # xywh   BGRcolor
-        (fci.xywh_template, (255, 0, 0)),
-        (xywh_door,         (0, 0, 255)),
-        ]
-    
-    img2 = matcher.show_markup_image(fci.processed_image, rectangle_params)    
-    
-    # get a horizontal stack to look at in Firefox
-    res = np.hstack((fci.image, img2))  # stacking images side-by-side
-    
-    oname = '/tmp/out.jpg'
-    cv2.imwrite(oname, res)
-    print 'open -a Firefox file://%s' % oname
+    def show_results(self):
+        
+        # get xywh-tuple from top-left and bottom-right vertices of skinny garage door
+        xywh_door = matcher.convert_vertices_to_xywh(*self.roi_vertices)
+     
+        # tuple of parameters for rectangles to draw
+        rectangle_params = [
+            # xywh                color:  B    G    R
+            (self.xywh_template,       (255,   0,   0)),
+            (xywh_door,                (0,     0, 255)),
+            ]
+        
+        # get markup of processed image: blue rectangle around template, red around skinny garage door
+        img2 = matcher.get_markup_image(fci.processed_image, rectangle_params)    
+        
+        # get a horizontal stack result image to look at in Firefox
+        res = np.hstack((fci.image, img2))  # stacking images side-by-side
+        
+        oname = '/tmp/out.jpg'
+        cv2.imwrite(oname, res)
+        print 'open -a Firefox file://%s' % oname
     
 
 if __name__ == '__main__':
     
-    
     img_name = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
-    tmp_name = '/Users/ken/Pictures/foscam/template.jpg'
-    fci = FoscamImage(img_name, tmp_name)
-    print fci.image.shape
-    print fci.xywh_template
-    print fci.processed_image.shape
-    print fci.roi_vertices
-    
-    demo_show(fci)     
+    fci = FoscamImage(img_name)
+    print fci
+    fci.show_results()

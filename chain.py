@@ -158,10 +158,10 @@ def demo_show_main(img, final, xywh_temp, blursize=5, cliplim=3.0, gridsize=8):
     topleft_template = (xywh_temp[0], xywh_temp[1])    
     
     topleft2, bottomright2 = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
-    xywh_door = matcher.convert_tleft_bright_to_xywh(topleft2, bottomright2)
+    xywh_door = matcher.convert_vertices_to_xywh(topleft2, bottomright2)
     
     topleft3, bottomright3 = matcher.convert_offsetxy_wh_to_vertices(topleft_template, TARG_OFFSETXY_WH)
-    xywh_targ = matcher.convert_tleft_bright_to_xywh(topleft3, bottomright3)    
+    xywh_targ = matcher.convert_vertices_to_xywh(topleft3, bottomright3)    
     
     rectangle_params = [
         # xywh   BGRcolor
@@ -170,7 +170,7 @@ def demo_show_main(img, final, xywh_temp, blursize=5, cliplim=3.0, gridsize=8):
         (xywh_targ, (0, 255, 0)),
         ]
     
-    img2 = matcher.show_markup_image(final, rectangle_params)    
+    img2 = matcher.get_markup_image(final, rectangle_params)    
     
     # get a horizontal stack to look at in Firefox
     res = np.hstack((img, img2))  # stacking images side-by-side
