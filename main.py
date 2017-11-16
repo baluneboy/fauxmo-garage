@@ -1,5 +1,32 @@
 #!/usr/bin/env python
 
+"""Use a webcam as a sensor to control a garage door.
+
+This module provides classes to try determine whether the garage door is open.
+
+Example:
+    Demonstrate a quick show of results::
+
+        $ python main.py
+
+Section breaks are created by resuming unindented text. Section breaks
+are also implicitly created anytime a new section starts.
+
+Attributes:
+    module_level_variable1 (int): Module level variables may be documented in
+        either the ``Attributes`` section of the module docstring, or in an
+        inline docstring immediately following the variable.
+
+        Either form is acceptable, but the two should not be mixed. Choose
+        one convention to document module level variables and be consistent
+        with it.
+
+Todo:
+    * For module TODOs
+    * You have to also use ``sphinx.ext.todo`` extension
+
+"""
+
 import os
 import sys
 import disp

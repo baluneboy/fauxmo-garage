@@ -1,54 +1,32 @@
 #!/usr/bin/env python
 
-"""Example Google style docstrings.
+"""Use a webcam as a sensor to control a garage door.
 
-This module demonstrates documentation as specified by the `Google Python
-Style Guide`_. Docstrings may extend over multiple lines. Sections are created
-with a section header and a colon followed by a block of indented text.
-
-Example:
-    Examples can be given using either the ``Example`` or ``Examples``
-    sections. Sections support any reStructuredText formatting, including
-    literal blocks::
-
-        $ python example_google.py
-
-Section breaks are created by resuming unindented text. Section breaks
-are also implicitly created anytime a new section starts.
-
-Attributes:
-    module_level_variable1 (int): Module level variables may be documented in
-        either the ``Attributes`` section of the module docstring, or in an
-        inline docstring immediately following the variable.
-
-        Either form is acceptable, but the two should not be mixed. Choose
-        one convention to document module level variables and be consistent
-        with it.
+This module provides classes to try determine whether the garage door is open.
 
 Todo:
     * For module TODOs
     * You have to also use ``sphinx.ext.todo`` extension
 
-.. _Google Python Style Guide:
-   http://google.github.io/styleguide/pyguide.html
-
 """
 
 import os
 import cv2
+import random
 import numpy as np
 from dateutil import parser
 
 import matcher
 from flimsy_constants import DOOR_OFFSETXY_WH
 
+
 class FoscamFile(object):
-    """The summary line for a class docstring should fit on one line.
+    
+    """A webcam filename parser.
 
     Attributes are documented inline with the attribute's declaration (see __init__ method below).
 
-    Properties created with the @property decorator should be documented
-    in the property's getter method.
+    Properties created with the @property decorator are documented in the property's getter method.
 
     """
     
@@ -57,7 +35,6 @@ class FoscamFile(object):
         
         Args:
             filename (str): Full path filename for input image file of interest.
-            bname (str): Basename extracted from filename.
 
         """        
         self.filename = filename
@@ -101,7 +78,7 @@ class FoscamFile(object):
         # get state
         if 'open' in self.bname:
             state = 'open'
-        elif 'close' in bname:
+        elif 'close' in self.bname:
             state = 'close'
         else:
             state = 'unknown'
@@ -109,7 +86,15 @@ class FoscamFile(object):
 
 
 class FoscamImage(object):
-   
+    
+    """A webcam image.
+
+    Attributes are documented inline with the attribute's declaration (see __init__ method below).
+
+    Properties created with the @property decorator are documented in the property's getter method.
+
+    """
+    
     def __init__(self, img_name, tmp_name='/Users/ken/Pictures/foscam/template.jpg'):
         self.img_name = img_name
         self.tmp_name = tmp_name
@@ -251,11 +236,41 @@ class FoscamImage(object):
         oname = '/tmp/out.jpg'
         cv2.imwrite(oname, res)
         print 'open -a Firefox file://%s' % oname
-    
 
+
+class Deck(object):
+
+    def __init__(self, date_range=None, morning=True, state=None, tmp_name=None, verbosity=None):
+        self.date_range = date_range
+        self.morning = morning
+        self.state = state
+        self.tmp_name = tmp_name
+        self.verbosity = verbosity
+        self.images = []
+
+        img_names = ['/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg',
+                     '/Users/ken/Pictures/foscam/2017-11-08_06_00_close.jpg']
+
+        for img_name in img_names:        
+            if self.tmp_name:
+                self.images.append(FoscamImage(img_name, tmp_name=self.tmp_name))
+            else:
+                self.images.append(FoscamImage(img_name))
+
+    def __len__(self):
+        return len(self.images)
+    
+    def random_draw(self):
+        fcimage = random.choice(self.images)
+        return fcimage
+    
+    
 if __name__ == '__main__':
     
-    img_name = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
-    fci = FoscamImage(img_name)
+    deck = Deck()
+    print len(deck)
+    fci = deck.random_draw()
     print fci
-    fci.show_results()
+    for fci in deck.images:
+        print fci
+        fci.show_results()
