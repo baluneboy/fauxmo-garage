@@ -16,6 +16,8 @@ import random
 import numpy as np
 from dateutil import parser
 
+from pims.utils.datetime_ranger import DateRange
+
 import matcher
 from flimsy_constants import DOOR_OFFSETXY_WH
 from fgutils import calc_grayscale_hist, plot_hist
@@ -260,38 +262,78 @@ class FoscamImage(object):
 
 class Deck(object):
 
-    def __init__(self, date_range=None, morning=True, state=None, tmp_name=None, verbosity=None):
-        self.date_range = date_range
-        self.morning = morning
-        self.state = state
-        self.tmp_name = tmp_name
-        self.verbosity = verbosity
-        self.images = []
-
-        # TODO use inputs to build list of image filenames based on: date, am/pm, state
-        img_names = ['/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg',
-                     '/Users/ken/Pictures/foscam/2017-11-08_06_00_close.jpg']
-
-        for img_name in img_names:        
-            if self.tmp_name:
-                self.images.append(FoscamImage(img_name, tmp_name=self.tmp_name))
-            else:
-                self.images.append(FoscamImage(img_name))
+    def __init__(self, date_range=None, morning=True, state=None, tmp_name=None, verbose=False):
+        self._date_range = date_range  # FIXME use a setter to enforce isinstance of DateRange
+        self._set_morning(morning)
+        self._set_state(state)
+        self._set_tmp_name(tmp_name)   # FIXME setter: None means get from constants; otherwise, just check os.path.exists
+        self._set_verbose(verbose)     # FIXME setter: see _set_morning
+        self._filenames = None
+        self._images = None
 
     def __len__(self):
         return len(self.images)
+
+    @property
+    def date_range(self):
+        """DateRange: an object with start date and stop date attributes."""
+        if self._date_range:
+            return self._date_range
+        return DateRange(8, 2)
+
+    @property
+    def morning(self):
+        """boolean: True for just morning files; False for all files"""
+        return self._morning
+    
+    def _set_morning(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('Deck.morning must be a bool')
+        self._morning = value
+
+    @property
+    def state(self):
+        """string: state of door indicated in filename (open or close); None for don't care"""
+        return self._state
+    
+    def _set_state(self, value):
+        if value:
+            if value not in ['open', 'close']:
+                raise TypeError('Deck.state should be either open or close')        
+        self._state = value
+        
+    @property
+    def filenames(self):
+        """Get list of filenames."""
+        if self._filenames:
+            return self._filenames
+        
+        # TODO use inputs to build list of image filenames based on: date, am/pm, state
+        _filenames = ['/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg',
+            '/Users/ken/Pictures/foscam/2017-11-08_06_00_close.jpg']
+                
+        return _filenames
+
+    @property
+    def images(self):
+        """Get list of images."""
+        if self._images:
+            return self._images
+
+        _images = []
+        for img_name in self.filenames:        
+            if self.tmp_name:
+                _images.append(FoscamImage(img_name, tmp_name=self.tmp_name))
+            else:
+                _images.append(FoscamImage(img_name))
+                
+        return _images
     
     def random_draw(self):
         fcimage = random.choice(self.images)
         return fcimage
     
-
-class OpenClosePairs(Deck):    
-    
-    def __init__(self):
-        pass
-    
-    def compare_pair(self):
+    def compare_pairs(self):
         # TODO for each 'close' in images (use FoscamFile attributes)
         #      verify we have pairing, then overlay roi_lum_histograms on one plot
         pass
@@ -299,9 +341,11 @@ class OpenClosePairs(Deck):
     
 if __name__ == '__main__':
     
-    deck = Deck()
-    for fci in deck.images:
-        print fci
-        #fci.show_results()
-        print fci.roi_lum.shape
-        fci.plot_hist()
+    deck = Deck(state='open')
+    print deck.date_range
+    print deck.state
+    #for fci in deck.images:
+    #    print fci
+    #    #fci.show_results()
+    #    print fci.roi_lum.shape
+    #    fci.plot_hist()
