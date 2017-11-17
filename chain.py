@@ -121,7 +121,7 @@ def main_chain(img_name, template_name, blursize=5, cliplim=3.0, gridsize=8):
     # ith-channel of skinny garage door (roi1) after image processing
     i = 0
     c = colors[i]
-    sgd = final[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]][:,:,i]  # is this blue or Luminance?
+    sgd = final[topleft_sgd[1]:botright_sgd[1], topleft_sgd[0]:botright_sgd[0]][:,:,i]  # i = 0 for Luminance
     
     intensity_bins = range(0,256)
     n, bins, patches = ax.hist([sgd], intensity_bins, normed=1, color=c, histtype='step', cumulative=True, label='Color: ' + c)

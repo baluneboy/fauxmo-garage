@@ -18,6 +18,7 @@ from dateutil import parser
 
 import matcher
 from flimsy_constants import DOOR_OFFSETXY_WH
+from fgutils import calc_grayscale_hist, plot_hist
 
 
 class FoscamFile(object):
@@ -105,6 +106,7 @@ class FoscamImage(object):
         self._xywh_template = None
         self._roi_vertices = None
         self._processed_image = None
+        self._roi_lum = None
 
     def __str__(self):
         s =  '%s' % self.foscam_file
@@ -116,6 +118,17 @@ class FoscamImage(object):
         if self._image:
             return self._image
         return cv2.imread(self.img_name, 1)
+
+    @property
+    def roi_lum(self):
+        """numpy.ndarray: Array (h, w) of luminance channel of roi from processed image."""
+        if self._roi_lum:
+            return self._roi_lum
+        topleft, botright = self.roi_vertices
+        _roi = self.processed_image[topleft[1]:botright[1], topleft[0]:botright[0]]
+        _lab_roi = cv2.cvtColor(_roi, cv2.COLOR_BGR2LAB)  # convert color image to LAB color model
+        L, a, b = cv2.split(_lab_roi)  # split LAB image to 3 channels (L, a, b); L is luminance channel
+        return L
     
     @property
     def template(self):
@@ -215,6 +228,13 @@ class FoscamImage(object):
         
         return final
 
+    def get_hist(self):
+        return calc_grayscale_hist(self.roi_lum)
+
+    def plot_hist(self):
+        h = self.get_hist()
+        plot_hist(h)
+        
     def show_results(self):
         
         # get xywh-tuple from top-left and bottom-right vertices of skinny garage door
@@ -248,6 +268,7 @@ class Deck(object):
         self.verbosity = verbosity
         self.images = []
 
+        # TODO use inputs to build list of image filenames based on: date, am/pm, state
         img_names = ['/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg',
                      '/Users/ken/Pictures/foscam/2017-11-08_06_00_close.jpg']
 
@@ -264,13 +285,23 @@ class Deck(object):
         fcimage = random.choice(self.images)
         return fcimage
     
+
+class OpenClosePairs(Deck):    
+    
+    def __init__(self):
+        pass
+    
+    def compare_pair(self):
+        # TODO for each 'close' in images (use FoscamFile attributes)
+        #      verify we have pairing, then overlay roi_lum_histograms on one plot
+        pass
+    
     
 if __name__ == '__main__':
     
     deck = Deck()
-    print len(deck)
-    fci = deck.random_draw()
-    print fci
     for fci in deck.images:
         print fci
-        fci.show_results()
+        #fci.show_results()
+        print fci.roi_lum.shape
+        fci.plot_hist()
