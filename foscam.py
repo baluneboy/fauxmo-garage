@@ -13,14 +13,38 @@ Todo:
 import os
 import cv2
 import random
+import datetime
 import numpy as np
 from dateutil import parser
 
+#from pims.utils.daterange import daterange
 from pims.utils.datetime_ranger import DateRange
+#from pims.files.utils import listdir_filename_pattern
+from pims.files.filter_pipeline import FileFilterPipeline, DateRangeFoscamFile
 
 import matcher
-from flimsy_constants import DOOR_OFFSETXY_WH
+from flimsy_constants import DOOR_OFFSETXY_WH, _DEFAULT_FOLDER, _DEFAULT_TEMPLATE
 from fgutils import calc_grayscale_hist, plot_hist
+
+
+def get_date_range_foscam_files(start, stop, morning=True, topdir=_DEFAULT_FOLDER):
+   
+    # Initialize processing pipeline (prime the pipe with callables)
+    ffp = FileFilterPipeline(
+        DateRangeFoscamFile(start, stop, morning=morning),
+        #YoungFile(max_age_minutes=max_age_minutes),
+        #NotInGrabbedPodcastsDb(),
+        )
+
+    # get all files [quickly?]    
+    file_list = [os.path.join(topdir, f) for f in os.listdir(topdir) if os.path.isfile(os.path.join(topdir, f))]
+    
+    # apply processing pipeline to probably prune input list of files
+    my_files = []
+    for f in ffp(file_list):
+        my_files.append(f)
+
+    return my_files
 
 
 class FoscamFile(object):
@@ -98,7 +122,7 @@ class FoscamImage(object):
 
     """
     
-    def __init__(self, img_name, tmp_name='/Users/ken/Pictures/foscam/template.jpg'):
+    def __init__(self, img_name, tmp_name=_DEFAULT_TEMPLATE):
         self.img_name = img_name
         self.tmp_name = tmp_name
         self.foscam_file = FoscamFile(self.img_name)
@@ -262,12 +286,13 @@ class FoscamImage(object):
 
 class Deck(object):
 
-    def __init__(self, date_range=None, morning=True, state=None, tmp_name=None, verbose=False):
-        self._date_range = date_range  # FIXME use a setter to enforce isinstance of DateRange
+    def __init__(self, basedir=_DEFAULT_FOLDER, daterange=None, morning=True, state=None, tmp_name=None, verbose=False):
+        self._set_basedir(basedir)
+        self._set_daterange(daterange)
         self._set_morning(morning)
         self._set_state(state)
-        self._set_tmp_name(tmp_name)   # FIXME setter: None means get from constants; otherwise, just check os.path.exists
-        self._set_verbose(verbose)     # FIXME setter: see _set_morning
+        self._set_tmp_name(tmp_name)
+        self._set_verbose(verbose)
         self._filenames = None
         self._images = None
 
@@ -275,11 +300,25 @@ class Deck(object):
         return len(self.images)
 
     @property
-    def date_range(self):
-        """DateRange: an object with start date and stop date attributes."""
-        if self._date_range:
-            return self._date_range
-        return DateRange(8, 2)
+    def basedir(self):
+        """str: string for base directory where image files are stored"""
+        return self._basedir
+
+    def _set_basedir(self, value):
+        if not value:
+            if not os.path.exists(value):
+                raise ValueError('"%s" does not exist as foscam image folder' % f)
+        self._basedir = value
+
+    @property
+    def daterange(self):
+        """DateRange: an object to keep start and stop dates"""
+        return self._daterange
+
+    def _set_daterange(self, value):
+        if not value:
+            value = DateRange(8, 2)
+        self._daterange = value
 
     @property
     def morning(self):
@@ -292,6 +331,16 @@ class Deck(object):
         self._morning = value
 
     @property
+    def verbose(self):
+        """boolean: True for being more verbose"""
+        return self._verbose
+    
+    def _set_verbose(self, value):
+        if not isinstance(value, bool):
+            raise TypeError('Deck.verbose must be a bool')
+        self._verbose = value
+
+    @property
     def state(self):
         """string: state of door indicated in filename (open or close); None for don't care"""
         return self._state
@@ -301,6 +350,19 @@ class Deck(object):
             if value not in ['open', 'close']:
                 raise TypeError('Deck.state should be either open or close')        
         self._state = value
+
+    @property
+    def tmp_name(self):
+        """string: full filename for template image; None to get from constants"""
+        return self._tmp_name
+    
+    def _set_tmp_name(self, value):
+        if value:
+            if not os.path.exists(value):
+                raise TypeError('Deck.tmp_name template file "%s" does not exist' % value)
+        else:
+            value = _DEFAULT_TEMPLATE
+        self._tmp_name = value
         
     @property
     def filenames(self):
@@ -308,9 +370,10 @@ class Deck(object):
         if self._filenames:
             return self._filenames
         
-        # TODO use inputs to build list of image filenames based on: date, am/pm, state
-        _filenames = ['/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg',
-            '/Users/ken/Pictures/foscam/2017-11-08_06_00_close.jpg']
+        # TODO use inputs to build list of image filenames based on: daterange, am/pm, state
+        _filenames = get_date_range_foscam_files(self.daterange.start, self.daterange.stop, morning=self.morning)
+        if self.state:           
+            [ _filenames.remove(f) for f in _filenames if self.state not in f ]
                 
         return _filenames
 
@@ -340,12 +403,24 @@ class Deck(object):
     
     
 if __name__ == '__main__':
-    
-    deck = Deck(state='open')
-    print deck.date_range
-    print deck.state
-    #for fci in deck.images:
-    #    print fci
-    #    #fci.show_results()
-    #    print fci.roi_lum.shape
-    #    fci.plot_hist()
+
+    d1 = datetime.datetime(2017, 11,  7).date()
+    d2 = datetime.datetime(2017, 11,  9).date()
+    dr = DateRange(d1, d2)
+    state = None
+    deck = Deck(daterange=dr, state=state)
+    #print deck.daterange
+    #print deck.state
+    #print deck.morning
+    #print deck.state
+    #print deck.tmp_name
+    #print deck.verbose
+    #print deck.filenames, len(deck)
+    #print deck.images
+    if len(deck.images) > 6:
+        print 'more than 6, so only look at first 6'
+    for fci in deck.images[:6]:
+        print fci.foscam_file.filename
+        #fci.show_results()
+        #print fci.roi_lum.shape
+        fci.plot_hist()
