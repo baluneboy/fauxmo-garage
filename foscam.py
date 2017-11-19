@@ -11,29 +11,48 @@ Todo:
 """
 
 import os
+import re
 import cv2
 import random
 import datetime
 import numpy as np
 from dateutil import parser
+from matplotlib import pyplot as plt
 
 #from pims.utils.daterange import daterange
 from pims.utils.datetime_ranger import DateRange
-#from pims.files.utils import listdir_filename_pattern
-from pims.files.filter_pipeline import FileFilterPipeline, DateRangeFoscamFile
+from pims.files.filter_pipeline import FileFilterPipeline
 
 import matcher
-from flimsy_constants import DOOR_OFFSETXY_WH, _DEFAULT_FOLDER, _DEFAULT_TEMPLATE
+from flimsy_constants import DOOR_OFFSETXY_WH, _DEFAULT_FOLDER, _DEFAULT_TEMPLATE, _BASENAME_PATTERN
 from fgutils import calc_grayscale_hist, plot_hist
 
 
-def get_date_range_foscam_files(start, stop, morning=True, topdir=_DEFAULT_FOLDER):
+def parse_foscam_fullfilestr(fullfilestr, bname_pattern=_BASENAME_PATTERN):
+    """convert foscam timestamped fullfile string to datetime object"""
+    # /Users/ken/Pictures/foscam/2017-11-08_06_00_close.jpg
+    dtm = None
+    state = None
+    bname = os.path.basename(fullfilestr)
+    if not re.match(bname_pattern, bname):
+        pass
+    else:
+        p = re.compile(bname_pattern)
+        m = p.search(bname)
+        daystr = m.group('day')
+        hh = m.group('hour')
+        mm = m.group('minute')
+        state = m.group('state')
+        dtm = parser.parse(daystr + ' ' + hh + ':' + mm)
+    return dtm, state
+
+
+def get_date_range_foscam_files(start, stop, morning=True, state=None, topdir=_DEFAULT_FOLDER):
    
     # Initialize processing pipeline (prime the pipe with callables)
     ffp = FileFilterPipeline(
-        DateRangeFoscamFile(start, stop, morning=morning),
+        DateRangeStateFoscamFile(start, stop, morning=morning, state=state),
         #YoungFile(max_age_minutes=max_age_minutes),
-        #NotInGrabbedPodcastsDb(),
         )
 
     # get all files [quickly?]    
@@ -45,6 +64,38 @@ def get_date_range_foscam_files(start, stop, morning=True, topdir=_DEFAULT_FOLDE
         my_files.append(f)
 
     return my_files
+
+
+class DateRangeStateFoscamFile(object):
+    
+    def __init__(self, start, stop, morning=True, state=None):
+        self.start = start
+        self.stop = stop
+        self.morning = morning
+        self.state = state
+        
+    def __call__(self, file_list):
+        for f in file_list:
+            fdtm, fstate = parse_foscam_fullfilestr(f)
+            keep = False
+            state_matches = False
+            if self.state:
+                state_matches = self.state == fstate
+            else:
+                state_matches = True
+            if fdtm:  # not None
+                if state_matches:
+                    if fdtm.date() >= self.start and fdtm.date() <= self.stop:
+                        if self.morning:
+                            if fdtm.hour < 12:
+                                keep = True
+                        else:
+                            keep = True
+            if keep:
+                yield f
+                
+    def __str__(self):
+        return 'is a Foscam image file with %s < fname date < %s' % (self.start, self.stop)
 
 
 class FoscamFile(object):
@@ -65,12 +116,12 @@ class FoscamFile(object):
 
         """        
         self.filename = filename
-        self.bname = None
-        self.fsize = None  #: list of str: Doc comment *before* attribute, with type specified
-        self.dtm = None
-        self.state = None
+        self.bname = None  #: str: image file basename
+        self.fsize = None  #: int: bytes from os.stat's st_size
+        self.dtm = None    #: datetime: parsed from filename
+        self.state = None  #: str: door open/closed/unknonwn parsed from filename
         
-        # get actual values for bname, fsize, dtm and state from filename
+        # now get actual values for attributes
         self.parse_image_filename()
         
     def __str__(self):
@@ -78,7 +129,7 @@ class FoscamFile(object):
         return s
             
     def parse_image_filename(self):
-        """Parse image filename (just basename) to extract what is stored in the filename itself.
+        """Parse image filename to extract some useful info.
         
         Returns a tuple of (bname, dtm, fsize, state).
         -------
@@ -98,18 +149,8 @@ class FoscamFile(object):
         # get file size in bytes
         self.fsize = os.stat(self.filename).st_size
         
-        # get datetime
-        dstr, hh, mm = self.bname[0:16].split('_')
-        self.dtm = parser.parse(dstr + ' ' + hh + ':' + mm)
-        
-        # get state
-        if 'open' in self.bname:
-            state = 'open'
-        elif 'close' in self.bname:
-            state = 'close'
-        else:
-            state = 'unknown'
-        self.state = state
+        # get datetime and state
+        self.dtm, self.state = parse_foscam_fullfilestr(self.filename)
 
 
 class FoscamImage(object):
@@ -132,7 +173,7 @@ class FoscamImage(object):
         self._xywh_template = None
         self._roi_vertices = None
         self._processed_image = None
-        self._roi_lum = None
+        self._roi_luminance = None
 
     def __str__(self):
         s =  '%s' % self.foscam_file
@@ -146,10 +187,10 @@ class FoscamImage(object):
         return cv2.imread(self.img_name, 1)
 
     @property
-    def roi_lum(self):
+    def roi_luminance(self):
         """numpy.ndarray: Array (h, w) of luminance channel of roi from processed image."""
-        if self._roi_lum:
-            return self._roi_lum
+        if self._roi_luminance:
+            return self._roi_luminance
         topleft, botright = self.roi_vertices
         _roi = self.processed_image[topleft[1]:botright[1], topleft[0]:botright[0]]
         _lab_roi = cv2.cvtColor(_roi, cv2.COLOR_BGR2LAB)  # convert color image to LAB color model
@@ -255,7 +296,7 @@ class FoscamImage(object):
         return final
 
     def get_hist(self):
-        return calc_grayscale_hist(self.roi_lum)
+        return calc_grayscale_hist(self.roi_luminance)
 
     def plot_hist(self):
         h = self.get_hist()
@@ -293,7 +334,6 @@ class Deck(object):
         self._set_state(state)
         self._set_tmp_name(tmp_name)
         self._set_verbose(verbose)
-        self._filenames = None
         self._images = None
 
     def __len__(self):
@@ -363,18 +403,12 @@ class Deck(object):
         else:
             value = _DEFAULT_TEMPLATE
         self._tmp_name = value
-        
-    @property
-    def filenames(self):
-        """Get list of filenames."""
-        if self._filenames:
-            return self._filenames
-        
-        # TODO use inputs to build list of image filenames based on: daterange, am/pm, state
+
+    def _get_filenames(self):
+        """get list of filenames"""
         _filenames = get_date_range_foscam_files(self.daterange.start, self.daterange.stop, morning=self.morning)
         if self.state:           
             [ _filenames.remove(f) for f in _filenames if self.state not in f ]
-                
         return _filenames
 
     @property
@@ -384,7 +418,8 @@ class Deck(object):
             return self._images
 
         _images = []
-        for img_name in self.filenames:        
+        fnames = self._get_filenames()
+        for img_name in fnames:
             if self.tmp_name:
                 _images.append(FoscamImage(img_name, tmp_name=self.tmp_name))
             else:
@@ -396,19 +431,48 @@ class Deck(object):
         fcimage = random.choice(self.images)
         return fcimage
     
-    def compare_pairs(self):
-        # TODO for each 'close' in images (use FoscamFile attributes)
-        #      verify we have pairing, then overlay roi_lum_histograms on one plot
-        pass
+    def overlay_roi_histograms(self):
+        h0 = self.images[0].get_hist()
+        hopen = np.zeros_like(h0)
+        hclose = np.zeros_like(h0)        
+        for fci in self.images[1:]:
+            if 'open' in os.path.basename(fci.foscam_file.filename):
+                hopen += fci.get_hist()
+            else:
+                hclose += fci.get_hist()
+        #    plt.plot(h, color=c, alpha=0.6)
+        #    print fci.foscam_file.filename, type(h)
+        #plt.xlim([0, 256])
+        #plt.show()    
+        plt.plot(hopen, 'r')
+        plt.plot(hclose, 'b')
+        plt.xlim([0, 256])
+        plt.show()
     
-    
+    def show_roi_luminance_medians(self):
+        for fci in self.images:
+            med = np.median(fci.roi_luminance)
+            if med < 191.0:
+                guess = 'open'
+            else:
+                guess = 'close'
+            if not fci.foscam_file.state == guess:
+                print 'open -a Firefox file://%s # OOPS!' % fci.img_name
+
+
 if __name__ == '__main__':
 
-    d1 = datetime.datetime(2017, 11,  7).date()
-    d2 = datetime.datetime(2017, 11,  9).date()
+    d1 = datetime.datetime(2015, 11,  4).date()
+    d2 = datetime.datetime(2017, 11, 17).date()
     dr = DateRange(d1, d2)
     state = None
-    deck = Deck(daterange=dr, state=state)
+    morning = False
+    deck = Deck(daterange=dr, state=state, morning=morning)
+    #deck.overlay_roi_histograms()
+    deck.show_roi_luminance_medians()
+    
+    raise SystemExit
+    
     #print deck.daterange
     #print deck.state
     #print deck.morning
@@ -422,5 +486,5 @@ if __name__ == '__main__':
     for fci in deck.images[:6]:
         print fci.foscam_file.filename
         #fci.show_results()
-        #print fci.roi_lum.shape
+        #print fci.roi_luminance.shape
         fci.plot_hist()

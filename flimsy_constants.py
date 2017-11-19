@@ -22,3 +22,4 @@ TARG_OFFSETXY_WH = (203, 198, 10, 34)    # offset for where the target was (for 
 
 _DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
 _DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
+_BASENAME_PATTERN = r'^(?P<day>\d{4}-\d{2}-\d{2})_(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<state>open|close)\.jpg$'

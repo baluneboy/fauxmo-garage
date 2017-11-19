@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import cv2
+from matplotlib import pyplot as plt    
 
 
 # TODO compare cv2 to numpy and to matplotlib for histogram calc performance (speed and usage)
@@ -11,7 +12,6 @@ def calc_grayscale_hist(img):
 
 
 def plot_hist(hist):
-    from matplotlib import pyplot as plt    
     plt.plot(hist)
     plt.xlim([0, 256])
     plt.show()
