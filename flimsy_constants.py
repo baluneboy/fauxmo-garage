@@ -20,6 +20,6 @@ These depend on camera not moving relative to scene of interest.
 DOOR_OFFSETXY_WH = (167, 154, 52, 112)
 TARG_OFFSETXY_WH = (203, 198, 10, 34)    # offset for where the target was (for flood fill)
 
-_DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
-_DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
+_DEFAULT_FOLDER = '/home/pi/Pictures/foscam'
+_DEFAULT_TEMPLATE = '/home/pi/Pictures/foscam/template.jpg'
 _BASENAME_PATTERN = r'^(?P<day>\d{4}-\d{2}-\d{2})_(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<state>open|close)\.jpg$'

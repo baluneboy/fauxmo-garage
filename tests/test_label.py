@@ -3,6 +3,9 @@
 import os
 import unittest
 import glob
+import numpy as np
+
+from fauxmo_garage.foscam import FoscamImage
 
 
 class LabelTestCase(unittest.TestCase):
@@ -27,9 +30,20 @@ class LabelTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_bad_labels(self):
-        len_got = len(self.bad_files)
-        len_exp = len(self.all_files)
+    def test_mislabel(self):
+        _bads_detected = []
+        for f in self.bad_files:
+            fci = FoscamImage(f)
+            med = np.median(fci.roi_luminance)
+            if med < 191.0:
+                guess = 'open'
+            else:
+                guess = 'close'
+            if not fci.foscam_file.state == guess:
+                _bads_detected.append(f)
+
+        len_got = len(_bads_detected)
+        len_exp = len(self.bad_files)
         self.assertEqual(len_got, len_exp,
             'mis-labeled file list length (%d) does not equal expected length (%d)' % (len_got, len_exp))
 
