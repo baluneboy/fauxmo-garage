@@ -6,11 +6,11 @@ from matplotlib import pyplot as plt
 
 MIN_MATCH_COUNT = 10
 
-img1 = cv2.imread('/Users/ken/Pictures/box.png',0)          # queryImage
-img2 = cv2.imread('/Users/ken/Pictures/box_in_scene.png',0) # trainImage
+img1 = cv2.imread('/home/pi/dev/programs/python/fauxmo_garage/data/box.png',0)  # queryImage
+img2 = cv2.imread('/home/pi/dev/programs/python/fauxmo_garage/data/box_in_scene.png',0)  # trainImage
 
 # Initiate SIFT detector
-sift = cv2.SIFT()
+sift = cv2.xfeatures2d.SIFT_create()
 
 # find the keypoints and descriptors with SIFT
 kp1, des1 = sift.detectAndCompute(img1,None)

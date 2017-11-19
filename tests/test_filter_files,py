@@ -3,6 +3,7 @@
 import os
 import unittest
 import datetime
+import glob
 
 from pims.files.filter_pipeline import FileFilterPipeline
 from fauxmo_garage.foscam import DateRangeStateFoscamFile
@@ -37,13 +38,13 @@ class FileFilterTestCase(unittest.TestCase):
             )
         filt_files = [ f for f in ffp(self.files) ]
         len_got = len(filt_files)
-        len_exp = len(self.files)
+        len_exp = len(glob.glob(self.topdir + '/2017*jpg'))
         self.assertEqual(len_got, len_exp,
             'file list length (%d) does not equal expected filtered file list length (%d)' % (len_got, len_exp))
 
     def test_filter_daterange_morning(self):
         # initialize processing pipeline (prime the pipe with callables)
-        ffp = FileFilterPipeline(
+        ffp = FileFilterPipeline(                         #         TRUE        NONE
             DateRangeStateFoscamFile(self.start, self.stop, morning=True, state=None),
             #YoungFile(max_age_minutes=max_age_minutes),
             )
@@ -56,7 +57,7 @@ class FileFilterTestCase(unittest.TestCase):
     def test_filter_daterange_state(self):
         for state in ['open', 'close']:
             # initialize processing pipeline (prime the pipe with callables)
-            ffp = FileFilterPipeline(
+            ffp = FileFilterPipeline(                         #         FALSE        STATE
                 DateRangeStateFoscamFile(self.start, self.stop, morning=False, state=state),
                 #YoungFile(max_age_minutes=max_age_minutes),
                 )
