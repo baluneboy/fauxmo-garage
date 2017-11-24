@@ -23,8 +23,6 @@ from template import GrayscaleTemplateImage
 from foscam import FoscamImage, get_date_range_foscam_files
 from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE, DAYONE
 
-print DEFAULT_FOLDER
-print DEFAULT_TEMPLATE
 
 class FoscamImageIterator(object):
 
@@ -67,7 +65,7 @@ class FoscamImageIterator(object):
             raise StopIteration
         else:
             self.current += 1
-            return FoscamImage(self.filenames[self.current - 1], tmp=self.template)
+            return FoscamImage(self.filenames[self.current - 1], template=self.template)
 
 
 class DateRangeException(Exception):
@@ -217,7 +215,6 @@ class Deck(object):
     
     def show_roi_luminance_medians(self):
         for fci in self.images:
-            print fci
             med = np.median(fci.roi_luminance)
             if med < 191.0:
                 guess = 'open'
@@ -231,11 +228,10 @@ class Deck(object):
 
 if __name__ == '__main__':
 
-    dr = ['2017-11-11', '2017-11-15']
+    dr = ['2017-11-11', '2017-11-12']
     state = None
     morning = False
     deck = Deck(date_range=dr, state=state, morning=morning)
-    print deck.tmp_name
 
     #deck.overlay_roi_histograms()
     deck.show_roi_luminance_medians()
