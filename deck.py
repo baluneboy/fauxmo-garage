@@ -26,36 +26,29 @@ from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE, DAYONE
 
 class FoscamImageIterator(object):
 
-    def __init__(self, filenames, tmp=DEFAULT_TEMPLATE):
+    def __init__(self, filenames, template=DEFAULT_TEMPLATE):
         self.filenames = filenames
-        self._tmp = tmp
-        self._tmp_name = None
-        self._template = None
+        self._template = template
         self.current = 0
         self.max = len(filenames) - 1
 
     @property
     def template(self):
         """numpy.ndarray: Array (h, w) of template image (grayscale)"""
-        if self._template:
-            return self._template
-
-        if self._tmp is None:
+        if self._template is None:
             # is None, so use default template
-            self._tmp_name = DEFAULT_TEMPLATE
             tmp = GrayscaleTemplateImage(DEFAULT_TEMPLATE)
             return tmp.image
-        else:
-            # not None, so branch on type
-            if isinstance(self._tmp, str):
-                # type is str, so read from string filename
-                self._tmp_name = self._tmp
-                tmp = GrayscaleTemplateImage(self._tmp)
-                return tmp.image
-            elif isinstance(self._tmp, GrayscaleTemplateImage):
-                # type is GrayscaleTemplateImage, so return image part of object
-                self._tmp_name = self._tmp.img_name
-                return self._tmp.image
+        elif isinstance(self._template, np.ndarray):
+            # type is numpy array, so just return it
+            return self._template
+        elif isinstance(self._template, str):
+            # type is str, so read from string filename
+            tmp = GrayscaleTemplateImage(self._template)
+            return tmp.image
+        elif isinstance(self._template, GrayscaleTemplateImage):
+            # type is GrayscaleTemplateImage, so return image part of object
+            return self._template.image
 
     def __iter__(self):
         return self
@@ -189,17 +182,16 @@ class Deck(object):
 
         # return iterator object
         fnames = self._get_filenames()
-        return FoscamImageIterator(fnames, tmp=tmp)
+        return FoscamImageIterator(fnames, template=tmp)
     
     def random_draw(self):
         fcimage = random.choice(self.images)
         return fcimage
     
     def overlay_roi_histograms(self):
-        h0 = self.images[0].get_hist()
-        hopen = np.zeros_like(h0)
-        hclose = np.zeros_like(h0)        
-        for fci in self.images[1:]:
+        hopen = np.zeros((256, 1))
+        hclose = np.zeros((256, 1))
+        for fci in self.images:
             if 'open' in os.path.basename(fci.foscam_file.filename):
                 hopen += fci.get_hist()
             else:
@@ -207,7 +199,7 @@ class Deck(object):
         #    plt.plot(h, color=c, alpha=0.6)
         #    print fci.foscam_file.filename, type(h)
         #plt.xlim([0, 256])
-        #plt.show()    
+        #plt.show()
         plt.plot(hopen, 'r')
         plt.plot(hclose, 'b')
         plt.xlim([0, 256])
@@ -228,10 +220,10 @@ class Deck(object):
 
 if __name__ == '__main__':
 
-    dr = ['2017-11-11', '2017-11-12']
+    dr = ['2017-11-11', '2017-11-14']
     state = None
     morning = False
     deck = Deck(date_range=dr, state=state, morning=morning)
 
-    #deck.overlay_roi_histograms()
-    deck.show_roi_luminance_medians()
+    deck.overlay_roi_histograms()
+    #deck.show_roi_luminance_medians()

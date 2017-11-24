@@ -102,11 +102,12 @@ class FoscamFileTestCase(unittest.TestCase):
         self._crudely_verify_grayscale_from_dims(self.fci.roi_luminance)
 
     def test_foscam_image_template_input_varieties(self):
-
+        fname = self.data_files['open'][0]
         fcis = [
-            FoscamImage(self.data_files['open'][0], tmp=None),
-            FoscamImage(self.data_files['open'][0], tmp=DEFAULT_TEMPLATE),
-            FoscamImage(self.data_files['open'][0], tmp=GrayscaleTemplateImage(DEFAULT_TEMPLATE)),
+            FoscamImage(fname, template=None),
+            FoscamImage(fname, template=DEFAULT_TEMPLATE),
+            FoscamImage(fname, template=GrayscaleTemplateImage(DEFAULT_TEMPLATE)),
+            FoscamImage(fname, template=GrayscaleTemplateImage(DEFAULT_TEMPLATE).image),
             ]
         for fci in fcis:
             self._crudely_verify_grayscale_from_dims(fci.template)

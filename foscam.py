@@ -208,6 +208,10 @@ class FoscamImage(object):
                 # type is numpy array, so return as-is
                 return self._template
 
+        elif isinstance(self._template, GrayscaleTemplateImage):
+                # type is GrayscaleTemplateImage, so return image part
+                return self._template.image
+
         elif isinstance(self._template, str):
             # type is str, so read from string filename
             template = GrayscaleTemplateImage(self._template)
@@ -215,7 +219,6 @@ class FoscamImage(object):
 
         else:
             raise TypeError('template is unexpected type %s' % type(self._template))
-
 
     @property
     def lab(self):
@@ -232,7 +235,7 @@ class FoscamImage(object):
         if self._xywh_template:
             return self._xywh_template
         L = self.lab[0]  # luminance channel is first element of the lab tuple
-        xywh_template = matcher.match_template(L, self.templateOLD)  # both inputs are grayscale
+        xywh_template = matcher.match_template(L, self.template)  # both inputs are grayscale
         return xywh_template
 
     @property
@@ -362,38 +365,13 @@ class FoscamImage(object):
     @property
     def roi_luminance(self):
         """numpy.ndarray: Array (h, w) of luminance channel of roi from processed image."""
-        if self._roi_luminance:
-            return self._roi_luminance
-        topleft, botright = self.roi_vertices
-        _roi = self.processed_image[topleft[1]:botright[1], topleft[0]:botright[0]]
-        _lab_roi = cv2.cvtColor(_roi, cv2.COLOR_BGR2LAB)  # convert color image to LAB color model
-        L, a, b = cv2.split(_lab_roi)  # split LAB image to 3 channels (L, a, b); L is luminance channel
-        return L
-    
-    @property
-    def templateOLD(self):
-        """numpy.ndarray: Array (h, w) of template image (grayscale)"""
-        if self._template is None:
-            if self._template is None:
-                # is None, so use default template
-                self._tmp_name = DEFAULT_TEMPLATE
-                # return cv2.imread(self._tmp_name, 0)
-                template = GrayscaleTemplateImage(DEFAULT_TEMPLATE)
-                return template.image
-            else:
-                # not None, so branch on type
-                if isinstance(self._template, str):
-                    # type is str, so read from string filename
-                    self._tmp_name = self._template
-                    # return cv2.imread(self._tmp_name, 0)
-                    template = GrayscaleTemplateImage(self._template)
-                    return template.image
-                elif isinstance(self._template, GrayscaleTemplateImage):
-                    # type is GrayscaleTemplateImage, so return image part of object
-                    self._tmp_name = self._template.img_name
-                    return self._template.image
-
-        return self._template
+        if self._roi_luminance is None:
+            topleft, botright = self.roi_vertices
+            _roi = self.processed_image[topleft[1]:botright[1], topleft[0]:botright[0]]
+            _lab_roi = cv2.cvtColor(_roi, cv2.COLOR_BGR2LAB)  # convert color image to LAB color model
+            L, a, b = cv2.split(_lab_roi)  # split LAB image to 3 channels (L, a, b); L is luminance channel
+            return L
+        return self._roi_luminance
 
     @property
     def lab(self):
@@ -410,7 +388,7 @@ class FoscamImage(object):
         if self._xywh_template:
             return self._xywh_template
         L = self.lab[0]  # luminance channel is first element of the lab tuple
-        xywh_template = matcher.match_template(L, self.templateOLD)  # both inputs are grayscale
+        xywh_template = matcher.match_template(L, self.template)  # both inputs are grayscale
         return xywh_template
 
     @property
