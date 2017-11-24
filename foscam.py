@@ -19,12 +19,12 @@ import numpy as np
 from dateutil import parser
 from matplotlib import pyplot as plt
 
-#from pims.utils.daterange import daterange
 from pims.utils.datetime_ranger import DateRange
 from pims.files.filter_pipeline import FileFilterPipeline
 
 import matcher
-from flimsy_constants import DOOR_OFFSETXY_WH, _DEFAULT_FOLDER, _DEFAULT_TEMPLATE, _BASENAME_PATTERN
+from template import GrayscaleTemplateImage
+from flimsy_constants import DOOR_OFFSETXY_WH, _DEFAULT_FOLDER, DEFAULT_TEMPLATE, _BASENAME_PATTERN
 from fgutils import calc_grayscale_hist, plot_hist
 
 
@@ -64,6 +64,47 @@ def get_date_range_foscam_files(start, stop, morning=True, state=None, topdir=_D
         my_files.append(f)
 
     return my_files
+
+
+class FoscamImageIterator(object):
+
+    def __init__(self, filenames, tmp=DEFAULT_TEMPLATE):
+        self.filenames = filenames
+        self._tmp = tmp
+        self._tmp_name = None
+        self._template = None
+        self.current = 0
+        self.max = len(filenames) - 1
+
+    @property
+    def template(self):
+        """numpy.ndarray: Array (h, w) of template image (grayscale)"""
+        if self._template:
+            return self._template
+        if self._tmp:
+            # not None, so branch on type
+            if isinstance(self._tmp, str):
+                # type is str, so read from string filename
+                self._tmp_name = self._tmp
+                return cv2.imread(self._tmp_name, 0)
+            elif isinstance(self._tmp, GrayscaleTemplateImage):
+                # type is GrayscaleTemplateImage, so return image part of object
+                self._tmp_name = self._tmp.tmp_name
+                return self._tmp.template
+        else:
+            # is None, so use default template
+            self._tmp_name = DEFAULT_TEMPLATE
+            return cv2.imread(self._tmp_name, 0)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.current > self.max:
+            raise StopIteration
+        else:
+            self.current += 1
+            return FoscamImage(self.filenames[self.current - 1], tmp=self.template)
 
 
 class DateRangeStateFoscamFile(object):
@@ -125,7 +166,7 @@ class FoscamFile(object):
         self.parse_image_filename()
         
     def __str__(self):
-        s =  '%s says "door %s" at %s (%d bytes)' % (self.bname, self.state, self.dtm, self.fsize)
+        s =  '%s has state: "door %s" at %s (%d bytes)' % (self.bname, self.state, self.dtm, self.fsize)
         return s
             
     def parse_image_filename(self):
@@ -152,10 +193,10 @@ class FoscamFile(object):
         # get datetime and state
         self.dtm, self.state = parse_foscam_fullfilestr(self.filename)
 
-
+    
 class FoscamImage(object):
     
-    """A webcam image.
+    """A webcam image object.
 
     Attributes are documented inline with the attribute's declaration (see __init__ method below).
 
@@ -163,10 +204,11 @@ class FoscamImage(object):
 
     """
     
-    def __init__(self, img_name, tmp_name=_DEFAULT_TEMPLATE):
+    def __init__(self, img_name, tmp=DEFAULT_TEMPLATE):
         self.img_name = img_name
-        self.tmp_name = tmp_name
         self.foscam_file = FoscamFile(self.img_name)
+        self._tmp = tmp
+        self._tmp_name = None
         self._image = None
         self._template = None
         self._lab = None
@@ -176,7 +218,7 @@ class FoscamImage(object):
         self._roi_luminance = None
 
     def __str__(self):
-        s =  '%s' % self.foscam_file
+        s = '%s' % self.foscam_file
         return s
 
     @property
@@ -202,7 +244,20 @@ class FoscamImage(object):
         """numpy.ndarray: Array (h, w) of template image (grayscale)"""
         if self._template:
             return self._template
-        return cv2.imread(self.tmp_name, 0)
+        if self._tmp is None:
+            # is None, so use default template
+            self._tmp_name = DEFAULT_TEMPLATE
+            return cv2.imread(self._tmp_name, 0)
+        else:
+            # not None, so branch on type
+            if isinstance(self._tmp, str):
+                # type is str, so read from string filename
+                self._tmp_name = self._tmp
+                return cv2.imread(self._tmp_name, 0)
+            elif isinstance(self._tmp, GrayscaleTemplateImage):
+                # type is GrayscaleTemplateImage, so return image part of object
+                self._tmp_name = self._tmp.tmp_name
+                return self._tmp.template
 
     @property
     def lab(self):
@@ -325,6 +380,8 @@ class FoscamImage(object):
         print 'open -a Firefox file://%s' % oname
 
 
+# FIXME the images attribute becomes an iterator method
+# TODO maybe Deck gets smarter and uses different templates for each constituent images based on overall light/darkness
 class Deck(object):
 
     def __init__(self, basedir=_DEFAULT_FOLDER, daterange=None, morning=True, state=None, tmp_name=None, verbose=False):
@@ -347,7 +404,7 @@ class Deck(object):
     def _set_basedir(self, value):
         if not value:
             if not os.path.exists(value):
-                raise ValueError('"%s" does not exist as foscam image folder' % f)
+                raise ValueError('"%s" does not exist as foscam image folder' % value)
         self._basedir = value
 
     @property
@@ -401,31 +458,40 @@ class Deck(object):
             if not os.path.exists(value):
                 raise TypeError('Deck.tmp_name template file "%s" does not exist' % value)
         else:
-            value = _DEFAULT_TEMPLATE
+            value = DEFAULT_TEMPLATE
         self._tmp_name = value
 
     def _get_filenames(self):
         """get list of filenames"""
         _filenames = get_date_range_foscam_files(self.daterange.start, self.daterange.stop, morning=self.morning)
         if self.state:           
-            [ _filenames.remove(f) for f in _filenames if self.state not in f ]
+            [_filenames.remove(f) for f in _filenames if self.state not in f]
+        _filenames.sort()
         return _filenames
 
     @property
     def images(self):
-        """Get list of images."""
+        """Get foscam image iterator."""
         if self._images:
             return self._images
 
-        _images = []
+        # establish template image for the entire deck to use
+        if self.tmp_name:
+            tmp = GrayscaleTemplateImage(self.tmp_name)
+        else:
+            tmp = GrayscaleTemplateImage(DEFAULT_TEMPLATE)
+
+        # # iterate over filenames to get image object for each
+        # _images = []
+        # fnames = self._get_filenames()
+        # for img_name in fnames:
+        #     _images.append(FoscamImage(img_name, tmp=tmp))
+        #
+        # return _images
+
+        # return iterator object
         fnames = self._get_filenames()
-        for img_name in fnames:
-            if self.tmp_name:
-                _images.append(FoscamImage(img_name, tmp_name=self.tmp_name))
-            else:
-                _images.append(FoscamImage(img_name))
-                
-        return _images
+        return FoscamImageIterator(fnames, tmp=tmp)
     
     def random_draw(self):
         fcimage = random.choice(self.images)
@@ -458,12 +524,19 @@ class Deck(object):
                 guess = 'close'
             if not fci.foscam_file.state == guess:
                 print 'open -a Firefox file://%s # OOPS!' % fci.img_name
+            else:
+                print med, fci.img_name
 
 
 if __name__ == '__main__':
 
-    d1 = datetime.datetime(2015, 11,  4).date()
-    d2 = datetime.datetime(2017, 11, 17).date()
+    # timg = GrayscaleTemplateImage()
+    # print timg.shape
+    # raise SystemExit
+
+    # d1 = datetime.datetime(2017, 11,  4).date()
+    d1 = datetime.datetime(2017, 11, 20).date()
+    d2 = datetime.datetime(2017, 11, 21).date()
     dr = DateRange(d1, d2)
     state = None
     morning = False

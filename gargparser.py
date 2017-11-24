@@ -15,14 +15,14 @@ import argparse
 import datetime
 from dateutil import parser as date_parser
 
-from flimsy_constants import _DEFAULT_FOLDER, _DEFAULT_TEMPLATE
+from flimsy_constants import _DEFAULT_FOLDER, DEFAULT_TEMPLATE
 
 _EXPECT_AGES = ['YOUNGEST', 'OLDEST']
 _DEFAULT_DATE = datetime.datetime.now().date() - datetime.timedelta(days=1)
 _DEFAULT_AGE = 'youngest'
 #_DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
 _DEFAULT_PATTERN = '\d{4}-\d{2}-\d{2}_\d{2}_\d{2}_(open|close)\.jpg' # LIKE 2017-11-09_06_07_close.jpg
-#_DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
+#DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
 #_DEFAULT_MAXDIST = 2    # maximum distance to start pixel for flood fill
 #_DEFAULT_THRESH = 100   # threshold for flood fill; less than threshold is open
 _DEFAULT_BLURSIZE = 5   # size of kernel for Gaussian blur (must be positive and odd)
@@ -186,8 +186,8 @@ def parse_inputs():
                         help=help_pattern)
 
     # template image file
-    help_template = 'template image; default=%s' % _DEFAULT_TEMPLATE
-    parser.add_argument('-t', '--template', default=_DEFAULT_TEMPLATE,
+    help_template = 'template image; default=%s' % DEFAULT_TEMPLATE
+    parser.add_argument('-t', '--template', default=DEFAULT_TEMPLATE,
                         type=template_str,
                         help=help_template)
 

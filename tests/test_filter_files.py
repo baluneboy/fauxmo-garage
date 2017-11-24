@@ -23,7 +23,8 @@ class FileFilterTestCase(unittest.TestCase):
         cls.topdir = cwd.replace(os.path.basename(cwd), 'data')
         cls.start = datetime.datetime(2017, 11, 10).date()
         cls.stop =  datetime.datetime(2017, 11, 17).date()
-        cls.files = [os.path.join(cls.topdir, f) for f in os.listdir(cls.topdir) if os.path.isfile(os.path.join(cls.topdir, f))]
+        #cls.files = [os.path.join(cls.topdir, f) for f in os.listdir(cls.topdir) if os.path.isfile(os.path.join(cls.topdir, f))]
+        cls.files = glob.glob(cls.topdir + '/2*jpg')
         #print len(cls.files)  # 42
 
     def tearDown(self):

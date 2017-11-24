@@ -4,7 +4,6 @@ import os
 import unittest
 import glob
 import numpy as np
-
 from fauxmo_garage.foscam import FoscamImage
 
 

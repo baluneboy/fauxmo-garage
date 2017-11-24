@@ -5,10 +5,8 @@ import cv2
 import numpy as np
 import matcher
 import disp
-
 from matplotlib import pyplot as plt
 import matplotlib.mlab as mlab
-
 from flimsy_constants import DOOR_OFFSETXY_WH, TARG_OFFSETXY_WH
 
 # TODO canvas/look at histograms to get a feel for what those look like with a few param changes
