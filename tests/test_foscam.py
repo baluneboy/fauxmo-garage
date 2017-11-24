@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
 import os
-import unittest
 import glob
-import numpy as np
-from fauxmo_garage.foscam import FoscamFile, FoscamImage, parse_foscam_fullfilestr
-from fauxmo_garage.flimsy_constants import _BASENAME_PATTERN
+import datetime
+import unittest
+
+from fauxmo_garage.foscam import FoscamFile, FoscamImage
+from fauxmo_garage.foscam import parse_foscam_fullfilestr, get_date_range_foscam_files
+from fauxmo_garage.flimsy_constants import BASENAME_PATTERN, DEFAULT_TEMPLATE
+from fauxmo_garage.template import GrayscaleTemplateImage
 
 
 class FoscamFileTestCase(unittest.TestCase):
@@ -20,24 +23,21 @@ class FoscamFileTestCase(unittest.TestCase):
         super(FoscamFileTestCase, cls).setUpClass()
         cwd = os.path.dirname(os.path.abspath(__file__))
         cls.topdir = cwd.replace(os.path.basename(cwd), 'data')
-        cls.data_files = {}
-        cls.data_files['open'] = glob.glob(cls.topdir + '/2*_open.jpg')
-        cls.data_files['close'] = glob.glob(cls.topdir + '/2*_close.jpg')
+        cls.data_files = dict()
+        cls.data_files['open'] = glob.glob(cls.topdir + '/2017*_open.jpg')
+        cls.data_files['close'] = glob.glob(cls.topdir + '/2017*_close.jpg')
         cls.data_files['cool'] = glob.glob(cls.topdir + '/1999-12-31*_open.jpg')
         cls.data_files['datetime_error'] = glob.glob(cls.topdir + '/1999-12-32*_close.jpg')
+        cls.fci = FoscamImage(cls.data_files['open'][0])
 
     def tearDown(self):
         pass
-
-    #@unittest.skip("...HEY...this is a simple demonstration of skipping")
-    #def test_demo_skip(self):
-    #    pass
 
     def test_parse_foscam_fullfilestr(self):
         # work on 2 key lists
         for state in ['open', 'close']:
             for fullfilestr in self.data_files[state]:
-                dtm, st = parse_foscam_fullfilestr(fullfilestr, bname_pattern=_BASENAME_PATTERN)
+                dtm, st = parse_foscam_fullfilestr(fullfilestr, bname_pattern=BASENAME_PATTERN)
                 self.assertEqual(st, state,
                     'parsed state (%s) does not match %s' % (st, state))
         
@@ -50,8 +50,23 @@ class FoscamFileTestCase(unittest.TestCase):
         # check dtm parsing here
         fullfilestr = '/my/path/1945-67-89_12_00_open.jpg'
         with self.assertRaises(ValueError):
-            dtm, st = parse_foscam_fullfilestr(fullfilestr, bname_pattern=_BASENAME_PATTERN)
-        
+            dtm, st = parse_foscam_fullfilestr(fullfilestr, bname_pattern=BASENAME_PATTERN)
+
+    # @unittest.skip("NEED TO IRON OUT DATETIME vs. DATE ISSUE")
+    def test_get_date_range_foscam_files(self):
+        start = datetime.datetime(2017, 11, 14).date()
+        stop = datetime.datetime(2017, 11, 18).date()
+        files = get_date_range_foscam_files(start, stop, morning=False, state=None, topdir=self.topdir)
+        files.sort(key=os.path.basename)
+        tup1 = parse_foscam_fullfilestr(files[0])
+        tup2 = parse_foscam_fullfilestr(files[-1])
+        d1 = tup1[0].date()
+        d2 = tup2[0].date()
+        self.assertLessEqual(start, d1,
+                             'first file "%s" naming comes before desired start %s' % (files[0], start))
+        self.assertGreaterEqual(stop, d2,
+                                'last file "%s" naming comes after desired stop %s' % (files[-1], stop))
+
     def test_foscam_file_datetime(self):
         for issue in ['datetime_error', ]:
             files = self.data_files[issue]
@@ -66,6 +81,35 @@ class FoscamFileTestCase(unittest.TestCase):
                 fcf = FoscamFile(f)
                 self.assertEqual(state, fcf.state,
                     'parsed state (%s) does not match %s' % (fcf.state, state))
+
+    def test_foscam_image_shape(self):
+        ishape = self.fci.image.shape
+        ilen = len(ishape)
+        elen = 3
+        self.assertEqual(elen, ilen,
+                         'NOT COLOR? expected %d dims (h, w) for image and got %d dims: %s' % (
+                         elen, ilen, str(ishape)))
+
+    def _crudely_verify_grayscale_from_dims(self, img):
+        ishape = img.shape
+        ilen = len(ishape)
+        elen = 2
+        self.assertEqual(elen, ilen,
+            'NOT GRAYSCALE? expected %d dims (h, w) for template image and got %d dims: %s' % (elen, ilen, str(ishape)))
+
+    # @unittest.skip("TEST LATER...TOO SLOW FOR NOW")
+    def test_foscam_image_roi_lum_shape(self):
+        self._crudely_verify_grayscale_from_dims(self.fci.roi_luminance)
+
+    def test_foscam_image_template_input_varieties(self):
+
+        fcis = [
+            FoscamImage(self.data_files['open'][0], tmp=None),
+            FoscamImage(self.data_files['open'][0], tmp=DEFAULT_TEMPLATE),
+            FoscamImage(self.data_files['open'][0], tmp=GrayscaleTemplateImage(DEFAULT_TEMPLATE)),
+            ]
+        for fci in fcis:
+            self._crudely_verify_grayscale_from_dims(fci.template)
 
 
 if __name__ == '__main__':

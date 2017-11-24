@@ -33,7 +33,7 @@ class GrayscaleTemplateImage(object):
 
     def __str__(self):
         h, w = self.image.shape
-        s = '%s has shape: (h,w) = (%d, %d)' % (self.img_name, h, w)
+        s = 'Template from %s has shape: (h, w) = (%d, %d)' % (self.img_name, h, w)
         return s
 
     @property

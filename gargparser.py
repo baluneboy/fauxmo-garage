@@ -15,12 +15,15 @@ import argparse
 import datetime
 from dateutil import parser as date_parser
 
-from flimsy_constants import _DEFAULT_FOLDER, DEFAULT_TEMPLATE
+from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE
+
+# TODO replace DateRange with pandas date_range?
+from pims.utils.datetime_ranger import DateRange
 
 _EXPECT_AGES = ['YOUNGEST', 'OLDEST']
 _DEFAULT_DATE = datetime.datetime.now().date() - datetime.timedelta(days=1)
 _DEFAULT_AGE = 'youngest'
-#_DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
+#DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
 _DEFAULT_PATTERN = '\d{4}-\d{2}-\d{2}_\d{2}_\d{2}_(open|close)\.jpg' # LIKE 2017-11-09_06_07_close.jpg
 #DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
 #_DEFAULT_MAXDIST = 2    # maximum distance to start pixel for flood fill
@@ -174,8 +177,8 @@ def parse_inputs():
                         help=help_age)
 
     # foscam image directory
-    help_folder = 'foscam image directory; default=%s' % _DEFAULT_FOLDER
-    parser.add_argument('-f', '--folder', default=_DEFAULT_FOLDER,
+    help_folder = 'foscam image directory; default=%s' % DEFAULT_FOLDER
+    parser.add_argument('-f', '--folder', default=DEFAULT_FOLDER,
                         type=folder_str,
                         help=help_folder)
 

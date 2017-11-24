@@ -70,7 +70,8 @@ def match_template(img, template):
     template -- template image used for searching in img
 
     """
-    #print template.shape
+    print type(img)
+    print type(template)
     h, w = template.shape[0:2]  # FIXME does this work for all cv2's
     
     # TODO use large collection of images to find which method works best (maybe some better in dark?)

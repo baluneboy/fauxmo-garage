@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+import os
+import re
 import cv2
-from matplotlib import pyplot as plt    
+from matplotlib import pyplot as plt
+
+from flimsy_constants import BASENAME_PATTERN, DEFAULT_FOLDER
 
 
 # TODO compare cv2 to numpy and to matplotlib for histogram calc performance (speed and usage)
@@ -31,4 +35,3 @@ if __name__ == '__main__':
     img = cv2.imread(fname, 0)
     hist = calc_grayscale_hist(img)
     plot_hist(hist)
-    

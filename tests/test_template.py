@@ -42,11 +42,23 @@ class TemplateTestCase(unittest.TestCase):
             template = GrayscaleTemplateImage(img_name=self.unreadable_file)  # bad file content
             tshape = template.image.shape  # need this line for image read method to be invoked
 
-    def test_verify_grayscale_default(self):
-        tshape = self.default_template.image.shape
+    def _verify_grayscale_from_dims(self, img):
+        tshape = img.shape
         tlen = len(tshape)
-        self.assertEqual(2, tlen,
-            'NOT GRAYSCALE? expected only 2 dims (h, w) for default template image, but got %d dims %s' % (tlen, str(tshape)))
+        elen = 2
+        self.assertEqual(elen, tlen,
+            'NOT GRAYSCALE? expected %d dims (h, w) for template image and got %d dims: %s' % (elen, tlen, str(tshape)))
+
+    def test_verify_grayscale_default(self):
+        self._verify_grayscale_from_dims(self.default_template.image)
+
+    def test_using_keyword_arg(self):
+        template = GrayscaleTemplateImage(img_name=DEFAULT_TEMPLATE)
+        self._verify_grayscale_from_dims(template.image)
+
+    def test_not_using_keyword_arg(self):
+        template = GrayscaleTemplateImage(DEFAULT_TEMPLATE)
+        self._verify_grayscale_from_dims(template.image)
 
 
 if __name__ == '__main__':

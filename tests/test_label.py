@@ -10,6 +10,7 @@ from fauxmo_garage.foscam import FoscamImage
 class LabelTestCase(unittest.TestCase):
     
     def setUp(self):
+        # self.skipTest('FOR NOW...THIS TAKES TOO LONG')
         pass
 
     @classmethod

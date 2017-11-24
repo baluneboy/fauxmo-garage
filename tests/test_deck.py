@@ -2,9 +2,8 @@
 
 import os
 import unittest
-import datetime
 import glob
-from fauxmo_garage.foscam import FoscamImageIterator
+from fauxmo_garage.deck import FoscamImageIterator
 
 
 class DeckTestCase(unittest.TestCase):
@@ -30,15 +29,8 @@ class DeckTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    # @unittest.skip("...HEY...this is a simple demonstration of skipping")
-    # def test_demo_skip(self):
-    #    pass
-
     def test_imageiterator(self):
-        count = 0
-        images = FoscamImageIterator(self.files)
-        for i in images:
-            count += 1
+        count = len(list(FoscamImageIterator(self.files)))
         exp_count = len(glob.glob(self.basedir + '/2017*jpg'))
         self.assertEqual(count, exp_count,
             'file count (%d) does not equal expected count (%d)' % (count, exp_count))
