@@ -5,7 +5,7 @@
 These depend on camera not moving relative to scene of interest.
 
 """
-
+import os
 import datetime
 
 # UL = (400, 27) # TEMPLATE IMAGE ROUTINELY GETS FOUND HERE (ABSOLUTE PIXEL COORDS)
@@ -22,8 +22,16 @@ import datetime
 DOOR_OFFSETXY_WH = (167, 154, 52, 112)
 TARG_OFFSETXY_WH = (203, 198, 10, 34)    # offset for where the target was (for flood fill)
 
-DEFAULT_FOLDER = '/home/pi/Pictures/foscam'
-DEFAULT_TEMPLATE = '/home/pi/Pictures/foscam/template.jpg'
-BASENAME_PATTERN = r'^(?P<day>\d{4}-\d{2}-\d{2})_(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<state>open|close)\.jpg$'
+_cwd = os.path.dirname(os.path.abspath(__file__))
+if _cwd.startswith('/home/pi'):
+    DEFAULT_FOLDER = '/home/pi/Pictures/foscam'
+    DEFAULT_TEMPLATE = '/home/pi/Pictures/foscam/template.jpg'    
+elif _cwd.startswith('/Users/ken'):
+    DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
+    DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
+else:
+    DEFAULT_FOLDER = '/home/ken/pictures/foscam'
+    DEFAULT_TEMPLATE = '/home/ken/pictures/foscam/template.jpg'
 
+BASENAME_PATTERN = r'^(?P<day>\d{4}-\d{2}-\d{2})_(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<state>open|close)\.jpg$'
 DAYONE = datetime.datetime.now() - datetime.timedelta(days=6)

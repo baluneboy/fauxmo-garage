@@ -23,6 +23,8 @@ from template import GrayscaleTemplateImage
 from foscam import FoscamImage, get_date_range_foscam_files
 from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE, DAYONE
 
+print DEFAULT_FOLDER
+print DEFAULT_TEMPLATE
 
 class FoscamImageIterator(object):
 
@@ -216,15 +218,15 @@ class Deck(object):
     def show_roi_luminance_medians(self):
         for fci in self.images:
             print fci
-            # med = np.median(fci.roi_luminance)
-            # if med < 191.0:
-            #     guess = 'open'
-            # else:
-            #     guess = 'close'
-            # if not fci.foscam_file.state == guess:
-            #     print 'open -a Firefox file://%s # OOPS!' % fci.img_name
-            # else:
-            #     print med, fci.img_name
+            med = np.median(fci.roi_luminance)
+            if med < 191.0:
+                guess = 'open'
+            else:
+                guess = 'close'
+            if not fci.foscam_file.state == guess:
+                print 'open -a Firefox file://%s # OOPS!' % fci.img_name
+            else:
+                print med, fci.img_name
 
 
 if __name__ == '__main__':
