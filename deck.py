@@ -15,8 +15,6 @@ import random
 import datetime
 import numpy as np
 from matplotlib import pyplot as plt
-
-# from pims.utils.datetime_ranger import DateRange
 import pandas as pd
 
 from template import GrayscaleTemplateImage
