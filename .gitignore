@@ -101,3 +101,6 @@ ENV/
 .mypy_cache/
 
 .DS_Store
+
+data/box_rot.png
+data/rot2017-11-10_12_30_close.jpg
