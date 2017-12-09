@@ -497,20 +497,23 @@ class FoscamImage(object):
 if __name__ == '__main__':
 
     import datetime
-    start = datetime.datetime(2017, 11, 20).date()
-    stop = datetime.datetime(2017, 11, 21).date()
-    files = get_date_range_foscam_files(start, stop, morning=False, state=None, topdir=DEFAULT_FOLDER)
-    print len(files)
+    import pandas as pd
+    from deck import Deck
+    
+    #start = datetime.datetime(2017, 11, 20).date()
+    #stop = datetime.datetime(2017, 11, 21).date()
+    #files = get_date_range_foscam_files(start, stop, morning=False, state=None, topdir=DEFAULT_FOLDER)
+    #print len(files)
 
     # # d1 = datetime.datetime(2017, 11,  4).date()
-    # d1 = datetime.datetime(2017, 11, 20).date()
-    # d2 = datetime.datetime(2017, 11, 21).date()
-    # dr = DateRange(d1, d2)
-    # state = None
-    # morning = False
-    # deck = Deck(daterange=dr, state=state, morning=morning)
-    # #deck.overlay_roi_histograms()
-    # deck.show_roi_luminance_medians()
+    d1 = datetime.datetime(2017, 11, 20).date()
+    d2 = datetime.datetime(2017, 11, 21).date()
+    dr = pd.date_range(d1, d2)
+    state = None
+    morning = False
+    deck = Deck(date_range=dr, state=state, morning=morning)
+    #deck.overlay_roi_histograms()
+    deck.show_roi_luminance_medians()
     #
     # raise SystemExit
     

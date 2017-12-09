@@ -28,6 +28,7 @@ Todo:
 """
 
 import os
+import re
 import sys
 import disp
 import output
@@ -71,6 +72,14 @@ def args_ok(args, print_fcn):
     return bln
 
 
+def get_most_recent_pic():
+    #/home/pi/Pictures/foscam/2017-11-20_06_25_close.jpg
+    top_dir = '/home/pi/Pictures/foscam'
+    r = re.compile(r'\d{4}-\d{2}-\d{2}_\d{2}_\d{2}_(open|close)\.jpg$')
+    latest_file = max(filter(r.search, os.listdir(top_dir)))
+    return os.path.join(top_dir, latest_file)
+
+
 def main():
     """handle input arguments and return Linux-like status code that comes from call to show game day results"""
 
@@ -104,4 +113,18 @@ def main():
 
 if __name__ == '__main__':
     """run main with command line args and return exit code"""
-    sys.exit(main())
+    #sys.exit(main())
+    
+    import numpy as np
+    from foscam import FoscamImage
+    fname = get_most_recent_pic()
+    fci = FoscamImage(fname)
+    med = np.median(fci.roi_luminance)
+    if med < 191.0:
+        guess = 'open'
+    else:
+        guess = 'close'
+    if not fci.foscam_file.state == guess:
+        print 'open -a Firefox file://%s # OOPS!' % fci.img_name
+    else:
+        print 'yay', med, fci.img_name    
