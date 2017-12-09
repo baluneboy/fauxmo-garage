@@ -2,11 +2,11 @@
 
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 
 MIN_MATCH_COUNT = 10
 
-img1 = cv2.imread('/home/pi/dev/programs/python/fauxmo_garage/data/box.png',0)  # queryImage
+img1 = cv2.imread('/home/pi/dev/programs/python/fauxmo_garage/data/box.png', 0)  # queryImage
 img2 = cv2.imread('/home/pi/dev/programs/python/fauxmo_garage/data/box_in_scene.png',0)  # trainImage
 
 # Initiate SIFT detector
@@ -54,4 +54,4 @@ draw_params = dict(matchColor = (0,255,0), # draw matches in green color
 
 img3 = cv2.drawMatches(img1,kp1,img2,kp2,good,None,**draw_params)
 
-plt.imshow(img3, 'gray'),plt.show()
+#plt.imshow(img3, 'gray'),plt.show()

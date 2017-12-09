@@ -3,8 +3,7 @@
 import os
 import re
 import cv2
-from matplotlib import pyplot as plt
-
+import matplotlib.pyplot as plt
 from flimsy_constants import BASENAME_PATTERN, DEFAULT_FOLDER
 
 
@@ -23,7 +22,6 @@ def plot_hist(hist):
 
 if __name__ == '__main__':
 
-    from matplotlib import pyplot as plt    
     from foscam import FoscamFile
     
     fname = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
