@@ -4,7 +4,7 @@ import os
 import unittest
 import glob
 import numpy as np
-from fauxmo_garage.foscam import FoscamImage
+from fauxmo_garage.fcimage import FoscamImage
 
 
 class LabelTestCase(unittest.TestCase):

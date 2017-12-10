@@ -6,7 +6,7 @@ import datetime
 import glob
 
 from pims.files.filter_pipeline import FileFilterPipeline
-from fauxmo_garage.foscam import DateRangeStateFoscamFile
+from fauxmo_garage.fcimage import DateRangeStateFoscamFile
 
 
 class FileFilterTestCase(unittest.TestCase):

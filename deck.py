@@ -12,13 +12,12 @@ Todo:
 
 import os
 import random
-import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
 
 from template import GrayscaleTemplateImage
-from foscam import FoscamImage, get_date_range_foscam_files
+from fcimage import FoscamImage, get_date_range_foscam_files
 from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE, DAYONE
 
 

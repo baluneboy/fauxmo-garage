@@ -5,8 +5,8 @@ import glob
 import datetime
 import unittest
 
-from fauxmo_garage.foscam import FoscamFile, FoscamImage
-from fauxmo_garage.foscam import parse_foscam_fullfilestr, get_date_range_foscam_files
+from fauxmo_garage.fcimage import FoscamFile, FoscamImage
+from fauxmo_garage.fcimage import parse_foscam_fullfilestr, get_date_range_foscam_files
 from fauxmo_garage.flimsy_constants import BASENAME_PATTERN, DEFAULT_TEMPLATE
 from fauxmo_garage.template import GrayscaleTemplateImage
 

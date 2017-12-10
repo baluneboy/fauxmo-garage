@@ -116,7 +116,7 @@ if __name__ == '__main__':
     #sys.exit(main())
     
     import numpy as np
-    from foscam import FoscamImage
+    from fcimage import FoscamImage
     fname = get_most_recent_pic()
     fci = FoscamImage(fname)
     med = np.median(fci.roi_luminance)

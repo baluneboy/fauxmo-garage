@@ -22,7 +22,7 @@ def plot_hist(hist):
 
 if __name__ == '__main__':
 
-    from foscam import FoscamFile
+    from fcimage import FoscamFile
     
     fname = '/Users/ken/Pictures/foscam/2017-11-08_06_00_open.jpg'
     fs = FoscamFile(fname)
