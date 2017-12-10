@@ -29,10 +29,9 @@ Todo:
 
 import os
 import re
-import sys
 import disp
 import output
-import gargparser
+import argparser
 
 from pims.files.utils import get_pathpattern_files
 
@@ -84,7 +83,7 @@ def main():
     """handle input arguments and return Linux-like status code that comes from call to show game day results"""
 
     # parse command line arguments
-    args = gargparser.parse_inputs()
+    args = argparser.parse_inputs()
 
     # get print function based on verbosity level
     print_fun = output.get_print_fun(args.verbosity)

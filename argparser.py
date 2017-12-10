@@ -18,16 +18,11 @@ from dateutil import parser as date_parser
 from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE
 
 # TODO replace DateRange with pandas date_range?
-from pims.utils.datetime_ranger import DateRange
 
 _EXPECT_AGES = ['YOUNGEST', 'OLDEST']
 _DEFAULT_DATE = datetime.datetime.now().date() - datetime.timedelta(days=1)
 _DEFAULT_AGE = 'youngest'
-#DEFAULT_FOLDER = '/Users/ken/Pictures/foscam'
 _DEFAULT_PATTERN = '\d{4}-\d{2}-\d{2}_\d{2}_\d{2}_(open|close)\.jpg' # LIKE 2017-11-09_06_07_close.jpg
-#DEFAULT_TEMPLATE = '/Users/ken/Pictures/foscam/template.jpg'
-#_DEFAULT_MAXDIST = 2    # maximum distance to start pixel for flood fill
-#_DEFAULT_THRESH = 100   # threshold for flood fill; less than threshold is open
 _DEFAULT_BLURSIZE = 5   # size of kernel for Gaussian blur (must be positive and odd)
 _DEFAULT_CLIPLIM = 3.0  # clip limit for CLAHE
 _DEFAULT_GRIDSIZE = 8   # tile grid size for CLAHE

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import cv2
-import numpy as np
 
 
 def convert_vertices_to_xywh(tleft, bright):
