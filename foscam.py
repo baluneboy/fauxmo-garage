@@ -7,6 +7,7 @@ This module provides classes to try determine whether the garage door is open.
 Todo:
     * For module TODOs
     * You have to also use ``sphinx.ext.todo`` extension
+    * Rename this file (module) so as not to conflict with control via 3rd party 'foscam' import
 
 """
 
