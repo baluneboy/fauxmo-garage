@@ -9,10 +9,14 @@ import socket
 import threading
 import SocketServer
 
-from foscamsnap import snap_pic
+from foscam_snap import FoscamSnap
 
+FOSCAM_INI_FILE = '/Users/ken/config/foscam/cgi_snap.ini'
+FOSCAMSNAP = FoscamSnap(FOSCAM_INI_FILE)
 
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
+
+
 
     def handle(self):
         data = self.request.recv(1024)
@@ -26,15 +30,16 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
     #  DONE 1. snap pic from webcam
     #  NEED 2. use opencv or darknet/YOLOv2 to determine true state, open or close
     #  NEED 3. log analysis results, LIKE client_data, client_guessed_state, server_true_state, amt_confidence, result_fname
+    
     def callback(self, client_data):
         # input client_data is comma-delimited string:
         #  SYNTAX: 'GUESSED
         #           STATE,------DATETIME------------,CLIENT'
         # EXAMPLE: 'close,2017-12-17 08:15:23.018234,pihole'
-        guessed_state = client_data.split(',')[0]
-        fname1 = snap_pic(guessed_state)
+        guessed_state = client_data.split(',')[0]  # gives client guess LIKE 'close' or 'open'
+        fcsnap_fname = FOSCAMSNAP.snap_picture(guessed_state)
         time.sleep(5)  # placeholder for analysis routine
-        return '%s' % fname1.upper()
+        return '\nopen -a Firefox %s &\n' % fcsnap_fname        
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
