@@ -14,6 +14,7 @@ from foscam_snap import FoscamSnap
 FOSCAM_INI_FILE = '/Users/ken/config/foscam/cgi_snap.ini'
 FOSCAMSNAP = FoscamSnap(FOSCAM_INI_FILE)
 
+
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
 

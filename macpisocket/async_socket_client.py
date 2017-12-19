@@ -2,8 +2,6 @@
 
 # THIS RUNS ON THE RPi
 
-# https://docs.python.org/2/library/socketserver.html
-
 import sys
 import socket
 import datetime
