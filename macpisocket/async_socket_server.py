@@ -9,15 +9,15 @@ import socket
 import threading
 import SocketServer
 
+from pims.files.log import my_logger
 from foscam_snap import FoscamSnap
+
 
 FOSCAM_INI_FILE = '/Users/ken/config/foscam/cgi_snap.ini'
 FOSCAMSNAP = FoscamSnap(FOSCAM_INI_FILE)
 
 
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
-
-
 
     def handle(self):
         data = self.request.recv(1024)
@@ -62,12 +62,16 @@ if __name__ == "__main__":
     server_thread.daemon = True
     server_thread.start()
 
-    print "Server loop running in thread:", server_thread.name
+    logger = my_logger('async_socket_server')
+    logger.info("Server loop running in thread: %s" % server_thread.name)
     
     try:
         while True:
             time.sleep(0.25)
 
-    except KeyboardInterrupt:   
+    except KeyboardInterrupt:
+        logger.info("Server got KeyboardInterrupt in thread: %s" % server_thread.name)
         server.shutdown()
         server.server_close()
+        logger.info("Server shutdown and closed.")
+        logger.info("--------------------\n")

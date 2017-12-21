@@ -6,6 +6,8 @@ import sys
 import socket
 import datetime
 
+from pims.files.log import my_logger
+
 
 class CommaSeparatedMessage(object):
     
@@ -36,6 +38,9 @@ if __name__ == "__main__":
 
     # FIXME with argparse to get state info
     
+    # establish logger
+    logger = my_logger('async_socket_client')
+    
     # set ip and port of the server
     ip, port = '192.168.1.103', 9998
 
@@ -50,4 +55,6 @@ if __name__ == "__main__":
         raise Exception("invalid arg; must be among: {'open'|'close'|'unknown'}")
     
     # send formatted message to server
-    send_to_server(ip, port, CommaSeparatedMessage(msg))
+    csm = CommaSeparatedMessage(msg)
+    logger.info('Sending comma-separated message to server: "%s"' % csm)
+    send_to_server(ip, port, csm)
