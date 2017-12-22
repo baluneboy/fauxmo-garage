@@ -2,23 +2,25 @@
 
 # THIS RUNS ON THE RPi
 
+import ast
 import sys
 import socket
-import datetime
 
 from pims.files.log import my_logger
+from async_socket_common import extract_field_value
 
 
 class CommaSeparatedMessage(object):
     
     def __init__(self, message):
-        if ',' in message: raise Exception('message to be formatted cannot itself contain commas')
+        if ',' in message: raise Exception('message to be formatted cannot itself contain comma')
         self.message = message
-        self.datetime = datetime.datetime.now()
         self.hostname = socket.gethostname()
         
     def __str__(self):
-        return ','.join([self.message, str(self.datetime), self.hostname])
+        what = 'wants:%s' % self.message
+        who = 'client:%s' % self.hostname
+        return ','.join([what, who])
 
 
 def send_to_server(ip, port, message):
@@ -26,10 +28,17 @@ def send_to_server(ip, port, message):
     sock.connect((ip, port))
     try:
         sock.sendall('%s' % message)        
+        logger.info('Sent a message to server: "%s"' % message)
         response = sock.recv(1024)
-        print "{}".format(response)
+        logger.info("Response from the server: {}".format(response))
     finally:
         sock.close()
+    
+    # extract result from response, which shows server analysis
+    fieldstr, triggerstr = extract_field_value(response, 1)
+    trigger_button = ast.literal_eval(triggerstr)
+
+    return trigger_button
 
 
 if __name__ == "__main__":
@@ -56,5 +65,5 @@ if __name__ == "__main__":
     
     # send formatted message to server
     csm = CommaSeparatedMessage(msg)
-    logger.info('Sending comma-separated message to server: "%s"' % csm)
-    send_to_server(ip, port, csm)
+    trigger = send_to_server(ip, port, csm)
+    logger.info('Trigger actions: %s' % str(trigger))
