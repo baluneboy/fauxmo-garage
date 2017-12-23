@@ -398,13 +398,16 @@ class FoscamImage(object):
         if self._roi_vertices:
             return self._roi_vertices
         
-        # use template matching on luminance channel to find gray-scale template in image of interest
-        topleft_template = (self.xywh_template[0], self.xywh_template[1])
-        
-        # FIXME what if foscam moves, then offset method will not work robustly, will it?
-        # extract skinny garage door subset image (roi1) using flimsy offsetxy_wh method
-        topleft_roi, botright_roi = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
-        
+        ## use template matching on luminance channel to find gray-scale template in image of interest
+        #topleft_template = (self.xywh_template[0], self.xywh_template[1])
+        #
+        ## FIXME what if foscam moves, then offset method will not work robustly, will it?
+        ## extract skinny garage door subset image (roi1) using flimsy offsetxy_wh method
+        #topleft_roi, botright_roi = matcher.convert_offsetxy_wh_to_vertices(topleft_template, DOOR_OFFSETXY_WH)
+
+        # FIXME The snow has introduced a monkey wrench into our scheme!
+        topleft_roi, botright_roi = (571, 179), (623, 291)
+
         return topleft_roi, botright_roi
     
     @property
@@ -497,9 +500,17 @@ class FoscamImage(object):
 
 if __name__ == '__main__':
 
+    import sys
     import datetime
     import pandas as pd
     from deck import Deck
+    
+    fname = '/Users/ken/Pictures/foscam/2017-12-23_12_00_unknown.jpg'
+    fname = sys.argv[1]
+    fci = FoscamImage(fname)
+    print fci.roi_vertices, fname
+    
+    sys.exit()
     
     #start = datetime.datetime(2017, 11, 20).date()
     #stop = datetime.datetime(2017, 11, 21).date()
