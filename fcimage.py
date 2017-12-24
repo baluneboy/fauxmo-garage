@@ -507,6 +507,7 @@ def quick_glob_check(glob_pat):
     import operator
     dtest = {'open': operator.gt, 'close': operator.le, 'noon': operator.le}
     
+    count = 0
     medmin, medmax = 9999.9, -9999.9
     fnames = glob.glob(glob_pat)
     for fname in fnames:
@@ -528,13 +529,14 @@ def quick_glob_check(glob_pat):
             print 'unhandled state in %s' % fname
             continue
         
+        count += 1
         if median_passes_test(MEDIAN_THRESHOLD, op, m):
             print "okay ",
         else:
             print "CRAP ",
         print fci.roi_vertices, fname, "%5.1f" % m
     
-    print 'ROI median: min = {:}, max = {:}'.format(medmin, medmax)
+    print 'ROI median: min = {:}, max = {:} for {:} files.'.format(medmin, medmax, count)
 
 
 if __name__ == '__main__':
