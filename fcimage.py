@@ -498,19 +498,63 @@ class FoscamImage(object):
         print 'open -a Firefox file://%s' % oname
 
 
+def median_passes_test(inp1, relate, inp2):    
+    return relate(inp1, inp2)
+
+
+def quick_glob_check(glob_pat):
+    import operator
+    dtest = {'open': operator.gt, 'close': operator.le, 'noon': operator.le}
+    
+    medmin, medmax = 9999.9, -9999.9
+    fnames = glob.glob(glob_pat)
+    for fname in fnames:
+        
+        fci = FoscamImage(fname)
+        m = np.median(fci.roi_luminance)
+        if m > medmax:
+            medmax = m
+        if m < medmin:
+            medmin = m
+        
+        if fname.endswith('open.jpg'):
+            op = dtest['open']
+        elif fname.endswith('close.jpg'):
+            op = dtest['close']
+        elif fname.endswith('noon.jpg'):
+            op = dtest['close']  # most of the time, at noon it should be closed          
+        else:
+            print 'unhandled state in %s' % fname
+            continue
+        
+        #if median_passes_test(191.0, op, m):
+        if median_passes_test(178.5, op, m):
+            print "okay ",
+        else:
+            print "CRAP ",
+        print fci.roi_vertices, fname, "%5.1f" % m
+    
+    print 'ROI median: min = {:}, max = {:}'.format(medmin, medmax)
+
+
 if __name__ == '__main__':
 
     import sys
+    import glob
     import datetime
     import pandas as pd
     from deck import Deck
     
-    fname = '/Users/ken/Pictures/foscam/2017-12-23_12_00_unknown.jpg'
-    fname = sys.argv[1]
-    fci = FoscamImage(fname)
-    print fci.roi_vertices, fname
+    #print get_truth(1.0, operator.gt, 0.0)
+    #print get_truth(1.1, operator.le, 1.2)
+    #sys.exit('bye')
     
-    sys.exit()
+    # quick glob check of list of files
+    # EXAMPLE
+    # python fcimage.py "/Users/ken/Pictures/foscam/2017-12-*open.jpg"
+    #quick_glob_check('/Users/ken/Pictures/foscam/2017-12-*open.jpg')
+    quick_glob_check(sys.argv[1])
+    sys.exit('')
     
     #start = datetime.datetime(2017, 11, 20).date()
     #stop = datetime.datetime(2017, 11, 21).date()

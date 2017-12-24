@@ -2,8 +2,10 @@
 
 import sys
 import numpy as np
-from fauxmo_garage.fcimage import FoscamImage
 import datetime
+
+from fauxmo_garage.fcimage import FoscamImage
+from flimsy_constants import MEDIAN_THRESHOLD
 
 
 def extract_field_value(message, idx_field):
@@ -30,7 +32,7 @@ class AnalysisResults(object):
         n1 = datetime.datetime.now()
         self.fcimage = FoscamImage(self.img_fname)
         self.median = np.median(self.fcimage.roi_luminance)
-        if self.median < 191.0:
+        if self.median < MEDIAN_THRESHOLD:
             self.state = 'open'
         else:
             self.state = 'close'
