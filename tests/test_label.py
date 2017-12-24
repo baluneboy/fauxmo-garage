@@ -5,6 +5,7 @@ import unittest
 import glob
 import numpy as np
 from fauxmo_garage.fcimage import FoscamImage
+from flimsy_constants import MEDIAN_THRESHOLD
 
 
 class LabelTestCase(unittest.TestCase):
@@ -35,7 +36,7 @@ class LabelTestCase(unittest.TestCase):
         for f in self.bad_files:
             fci = FoscamImage(f)
             med = np.median(fci.roi_luminance)
-            if med < 191.0:
+            if med < MEDIAN_THRESHOLD:
                 guess = 'open'
             else:
                 guess = 'close'

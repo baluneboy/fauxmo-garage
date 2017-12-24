@@ -35,3 +35,6 @@ else:
 
 BASENAME_PATTERN = r'^(?P<day>\d{4}-\d{2}-\d{2})_(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<state>open|close)\.jpg$'
 DAYONE = datetime.datetime.now() - datetime.timedelta(days=6)
+
+#MEDIAN_THRESHOLD = 191.0  # median(roi_luminance) above this value when door is closed
+MEDIAN_THRESHOLD = 178.5  # median(roi_luminance) above this value when door is closed
