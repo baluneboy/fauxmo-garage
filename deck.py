@@ -18,7 +18,7 @@ import pandas as pd
 
 from template import GrayscaleTemplateImage
 from fcimage import FoscamImage, get_date_range_foscam_files
-from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE, DAYONE
+from flimsy_constants import DEFAULT_FOLDER, DEFAULT_TEMPLATE, DAYONE, MEDIAN_THRESHOLD
 
 
 class FoscamImageIterator(object):
@@ -205,7 +205,7 @@ class Deck(object):
     def show_roi_luminance_medians(self):
         for fci in self.images:
             med = np.median(fci.roi_luminance)
-            if med < 191.0:
+            if med < MEDIAN_THRESHOLD:
                 guess = 'open'
             else:
                 guess = 'close'

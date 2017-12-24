@@ -116,10 +116,12 @@ if __name__ == '__main__':
     
     import numpy as np
     from fcimage import FoscamImage
+    from flimsy_constants import MEDIAN_THRESHOLD
+    
     fname = get_most_recent_pic()
     fci = FoscamImage(fname)
     med = np.median(fci.roi_luminance)
-    if med < 191.0:
+    if med < MEDIAN_THRESHOLD:
         guess = 'open'
     else:
         guess = 'close'
