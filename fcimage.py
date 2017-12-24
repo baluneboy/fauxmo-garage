@@ -503,6 +503,7 @@ def median_passes_test(inp1, relate, inp2):
 
 
 def quick_glob_check(glob_pat):
+    from flimsy_constants import MEDIAN_THRESHOLD    
     import operator
     dtest = {'open': operator.gt, 'close': operator.le, 'noon': operator.le}
     
@@ -527,8 +528,7 @@ def quick_glob_check(glob_pat):
             print 'unhandled state in %s' % fname
             continue
         
-        #if median_passes_test(191.0, op, m):
-        if median_passes_test(178.5, op, m):
+        if median_passes_test(MEDIAN_THRESHOLD, op, m):
             print "okay ",
         else:
             print "CRAP ",
